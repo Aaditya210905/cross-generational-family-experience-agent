@@ -11,6 +11,28 @@ venv/
 # Environment
 .env
 .env.local
+# Environment
+venv/
+.venv/
+env/
+.env
+*.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Node
+node_modules/
+.next/
+out/
+.turbo/
 
 # IDE
 .vscode/
@@ -22,6 +44,7 @@ venv/
 .DS_Store
 Thumbs.db
 
+<<<<<<< HEAD
 # Node / Frontend
 node_modules/
 .next/
@@ -36,3 +59,15 @@ fixtures/real/
 *.log
 coverage/
 .pytest_cache/
+=======
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Qloo response fixtures (PRIVATE - never commit real API responses)
+fixtures/private/
+
+# Build
+*.log
+>>>>>>> 2730be3d98e74a2c3022042eccbb795b301d3e9e
