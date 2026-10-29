@@ -174,7 +174,7 @@ export default function ConstraintsScreen() {
                 placeholder="City or area (e.g. San Francisco)"
                 value={constraints.location || ""}
                 onChange={(e) => updateConstraint("location", e.target.value)}
-                className="w-full"
+                className="w-full wizard-input"
               />
             </div>
           )}
@@ -240,7 +240,7 @@ export default function ConstraintsScreen() {
                   e.target.value ? parseInt(e.target.value) : undefined,
                 )
               }
-              className="w-32"
+              className="w-32 wizard-input"
             />
             <span className="text-sm text-[var(--ff-text-muted)]">minutes</span>
           </div>
@@ -280,7 +280,7 @@ export default function ConstraintsScreen() {
             placeholder="e.g. Wheelchair accessible required"
             value={constraints.mobility_notes || ""}
             onChange={(e) => updateConstraint("mobility_notes", e.target.value)}
-            className="w-full"
+            className="w-full wizard-input"
           />
         </div>
 

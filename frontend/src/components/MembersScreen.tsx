@@ -70,7 +70,7 @@ export default function MembersScreen() {
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="flex-1"
+              className="flex-1 wizard-input"
               maxLength={30}
             />
             <button
@@ -113,7 +113,8 @@ export default function MembersScreen() {
               return (
                 <div
                   key={member.id}
-                  className="glass-card p-4 flex items-center justify-between group"
+                  className="glass-card p-4 flex items-center justify-between group hover:transform-none"
+                  style={{ transform: "none" }}
                 >
                   <div className="flex items-center gap-3">
                     <div

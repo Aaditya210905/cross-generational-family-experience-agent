@@ -65,23 +65,31 @@ export default function ResultsScreen() {
 
     try {
       // Build the family profile from state
+      // Person B's contracts.models expects liked_items as string[] (not Preference objects)
       const familyProfile = {
         family_id: familyId,
         category: state.category || "movies",
         members: state.members.map((m) => ({
           nickname: m.nickname,
           generation: m.generation,
-          liked_items: m.liked_items.map((item: { text: string; category?: string }) => ({
-            text: item.text,
-            category: item.category || state.category || "movies",
-          })),
-          disliked_items: (m.disliked_items || []).map((item: { text: string; category?: string }) => ({
-            text: item.text,
-            category: item.category || state.category || "movies",
-          })),
           avatar_emoji: m.avatar_emoji || "👤",
+          // Transform Preference[] to string[] for Person B's API
+          liked_items: m.liked_items.map((item: { text: string } | string) =>
+            typeof item === "string" ? item : item.text
+          ),
+          disliked_items: (m.disliked_items || []).map((item: { text: string } | string) =>
+            typeof item === "string" ? item : item.text
+          ),
         })),
-        constraints: state.constraints || {},
+        constraints: {
+          budget_band: state.constraints?.budget || "any",
+          energy_level: state.constraints?.energy_level || "any",
+          location: state.constraints?.at_home ? "at_home" : (state.constraints?.location || null),
+          dietary: state.constraints?.dietary_restrictions || [],
+          mobility_notes: state.constraints?.mobility_notes || null,
+          time_available: "any",
+          category: state.category || "movies",
+        },
       };
 
       const data = await getRecommendations(familyProfile, adjustment) as { results?: unknown[] };
@@ -118,7 +126,7 @@ export default function ResultsScreen() {
     try {
       const adjustment = await submitFeedback(
         familyId,
-        [{ entity_id: entityId, entity_name: entityName, reaction }],
+        [{ candidate_id: entityId, candidate_name: entityName, reaction }],
         results as unknown[],
       );
 
