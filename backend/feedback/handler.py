@@ -150,7 +150,10 @@ class FeedbackHandler:
         try:
             from openai import AsyncOpenAI
 
-            client = AsyncOpenAI(api_key=settings.openai_api_key)
+            client_kwargs = {"api_key": settings.openai_api_key}
+            if settings.openai_base_url:
+                client_kwargs["base_url"] = settings.openai_base_url
+            client = AsyncOpenAI(**client_kwargs)
             response = await client.chat.completions.create(
                 model=settings.llm_model,
                 messages=[

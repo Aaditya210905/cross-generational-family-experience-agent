@@ -28,6 +28,7 @@ class Settings(BaseSettings):
 
     # ── LLM (Person B manages) ──────────────────────────────────────────
     openai_api_key: str = ""
+    openai_base_url: str | None = None
     llm_model: str = "gpt-4o-mini"
     llm_timeout: int = 30
     llm_max_tokens: int = 1024
