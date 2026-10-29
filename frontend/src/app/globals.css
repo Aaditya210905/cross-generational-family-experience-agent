@@ -175,12 +175,10 @@ a:hover { color: var(--accent-primary); }
   transform: translateY(-2px);
 }
 
-.glass-card--static {
-  composes: glass-card;
-}
 .glass-card--static:hover {
   transform: none;
   box-shadow: none;
+  border-color: var(--border-default);
 }
 
 /* ─── Buttons ────────────────────────────────────────────────────────── */
