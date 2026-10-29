@@ -154,7 +154,7 @@ export default function PreferencesScreen() {
                 value={likeInput}
                 onChange={(e) => setLikeInput(e.target.value)}
                 onKeyDown={(e) => handleKeyDown(e, false)}
-                className="flex-1"
+                className="flex-1 wizard-input"
               />
               <button
                 onClick={() => addPreference(likeInput, false)}
@@ -225,7 +225,7 @@ export default function PreferencesScreen() {
                 value={dislikeInput}
                 onChange={(e) => setDislikeInput(e.target.value)}
                 onKeyDown={(e) => handleKeyDown(e, true)}
-                className="flex-1"
+                className="flex-1 wizard-input"
               />
               <button
                 onClick={() => addPreference(dislikeInput, true)}

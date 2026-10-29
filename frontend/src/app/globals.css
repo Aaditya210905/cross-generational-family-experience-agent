@@ -5,7 +5,6 @@
    Premium dark-theme with glassmorphism, gradients, and micro-animations
    ═══════════════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
 
 /* ─── CSS Custom Properties ──────────────────────────────────────────── */
 :root {
@@ -180,6 +179,50 @@ a:hover { color: var(--accent-primary); }
   box-shadow: none;
   border-color: var(--border-default);
 }
+
+
+/* --- Demo Card (Welcome) ------------------------------------------------ */
+.demo-card {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  padding: var(--space-lg);
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-base);
+  cursor: pointer;
+  min-height: 160px;
+}
+
+.demo-card:hover {
+  border-color: var(--border-accent);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-3px);
+}
+
+.demo-card:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+/* --- Feature Card (Welcome) --------------------------------------------- */
+.feature-card {
+  text-align: center;
+  padding: var(--space-xl) var(--space-lg);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-base);
+}
+
+.feature-card:hover {
+  border-color: rgba(108, 92, 231, 0.15);
+  background: rgba(22, 22, 35, 0.9);
+}
+
 
 /* ─── Buttons ────────────────────────────────────────────────────────── */
 .btn {
@@ -1020,6 +1063,38 @@ a:hover { color: var(--accent-primary); }
   50% { opacity: 0.5; }
 }
 .animate-pulse-soft { animation: pulse-soft 2s ease-in-out infinite; }
+
+
+/* --- Form Inputs (global) ------------------------------------------------ */
+input[type="text"],
+input[type="number"],
+input[type="email"],
+select,
+textarea {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  font-family: var(--font-body);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  outline: none;
+  width: 100%;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="email"]:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.12);
+}
+
+input::placeholder {
+  color: var(--text-muted);
+}
 
 /* Input styling overrides for wizard screens */
 .wizard-input,
