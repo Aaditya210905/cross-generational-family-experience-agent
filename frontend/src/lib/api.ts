@@ -1,22 +1,32 @@
 /**
- * FamilyFusion AI — API Client
+ * FusionAI — Unified API Client
  *
  * Shared API client for communicating with the FastAPI backend.
- * Person A owns this file.
+ * Combines Person A (resolve, retrieve) and Person B (recommend, feedback, stream).
+ * All /api/* routes are proxied via Next.js rewrites → localhost:8000
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
-class ApiError extends Error {
+// ── Error Class ─────────────────────────────────────────────────────────────
+
+export class ApiError extends Error {
+  status: number;
+  detail?: Record<string, unknown>;
+
   constructor(
-    public status: number,
+    status: number,
     message: string,
-    public detail?: Record<string, unknown>,
+    detail?: Record<string, unknown>,
   ) {
     super(message);
     this.name = "ApiError";
+    this.status = status;
+    this.detail = detail;
   }
 }
+
+// ── Generic Request Helper ──────────────────────────────────────────────────
 
 async function request<T>(
   endpoint: string,
@@ -41,7 +51,7 @@ async function request<T>(
     }
     throw new ApiError(
       response.status,
-      detail?.message as string || `API error ${response.status}`,
+      (detail?.message as string) || (detail?.detail as string) || `API error ${response.status}`,
       detail,
     );
   }
@@ -49,36 +59,7 @@ async function request<T>(
   return response.json();
 }
 
-// ── API Functions ────────────────────────────────────────────────────────────
-
-export async function healthCheck() {
-  return request<{
-    status: string;
-    service: string;
-    qloo: { status: string; authenticated: boolean };
-    cache: { entries: number; hits: number; misses: number; hit_rate: number };
-  }>("/health");
-}
-
-export async function getDemoFamilies() {
-  return request<Record<string, { name: string; description: string; member_count: number }>>(
-    "/api/demo-families",
-  );
-}
-
-export async function getDemoFamily(key: string) {
-  return request<{
-    name: string;
-    description: string;
-    members: Array<{
-      id: string;
-      nickname: string;
-      generation: string;
-      liked_items: Array<{ text: string; category: string }>;
-      disliked_items: Array<{ text: string; category: string }>;
-    }>;
-  }>(`/api/demo-families/${key}`);
-}
+// ── Person A: Entity Resolution & Retrieval ─────────────────────────────────
 
 export async function resolvePreferences(body: {
   members: Array<{
@@ -149,4 +130,118 @@ export async function retrieveCandidates(body: {
   });
 }
 
-export { ApiError };
+// ── Person B: Recommend, Feedback, Stream ───────────────────────────────────
+
+export async function getRecommendations(
+  familyProfile: unknown,
+  adjustment: unknown = null,
+) {
+  return request<unknown>("/api/recommend", {
+    method: "POST",
+    body: JSON.stringify({
+      family_profile: familyProfile,
+      adjustment,
+    }),
+  });
+}
+
+export async function submitFeedback(
+  familyId: string,
+  feedbackItems: unknown[],
+  previousResults: unknown[] = [],
+) {
+  return request<unknown>("/api/feedback", {
+    method: "POST",
+    body: JSON.stringify({
+      family_id: familyId,
+      feedback: feedbackItems,
+      previous_results: previousResults,
+    }),
+  });
+}
+
+export async function clearFeedback(familyId: string) {
+  return request<{ status: string; family_id: string }>(
+    `/api/feedback/${familyId}`,
+    { method: "DELETE" },
+  );
+}
+
+// ── Demo Families ───────────────────────────────────────────────────────────
+
+export async function getDemoFamilies() {
+  return request<
+    Array<{
+      family_id: string;
+      label: string;
+      description: string;
+      member_count: number;
+      category: string;
+      members: Array<{
+        nickname: string;
+        generation: string;
+        avatar_emoji?: string;
+        liked_count?: number;
+      }>;
+    }>
+  >("/api/demo-families");
+}
+
+export async function getDemoFamily(familyId: string) {
+  return request<{
+    family_id: string;
+    label: string;
+    description: string;
+    profile: unknown;
+  }>(`/api/demo-families/${familyId}`);
+}
+
+// ── Health ───────────────────────────────────────────────────────────────────
+
+export async function healthCheck() {
+  return request<{
+    status: string;
+    app: string;
+    version: string;
+    environment: string;
+    llm_configured: boolean;
+    qloo_configured: boolean;
+  }>("/api/health");
+}
+
+// ── SSE Streaming ───────────────────────────────────────────────────────────
+
+export function connectProgressStream(
+  familyId: string,
+  onEvent?: (data: unknown) => void,
+  onError?: (e: Event) => void,
+  onDone?: () => void,
+): EventSource {
+  const url = `${API_BASE}/api/stream/${familyId}`;
+  const source = new EventSource(url);
+
+  source.addEventListener("progress", (e: MessageEvent) => {
+    try {
+      const data = JSON.parse(e.data);
+      onEvent?.(data);
+    } catch (err) {
+      console.warn("Failed to parse SSE event:", err);
+    }
+  });
+
+  source.addEventListener("done", () => {
+    source.close();
+    onDone?.();
+  });
+
+  source.addEventListener("error", (e: Event) => {
+    source.close();
+    onError?.(e);
+  });
+
+  source.addEventListener("keepalive", () => {
+    // No-op, just prevents timeout
+  });
+
+  return source;
+}

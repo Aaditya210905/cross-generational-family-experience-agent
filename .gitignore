@@ -1,16 +1,14 @@
 # Python
 __pycache__/
 *.py[cod]
+*$py.class
+*.so
 *.egg-info/
+*.egg
 dist/
 build/
-venv/
-.venv/
-*.egg
+.eggs/
 
-# Environment
-.env
-.env.local
 # Environment
 venv/
 .venv/
@@ -18,21 +16,12 @@ env/
 .env
 *.env.local
 
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-*.egg-info/
-dist/
-build/
-.eggs/
-
-# Node
+# Node / Frontend
 node_modules/
 .next/
 out/
 .turbo/
+.vercel
 
 # IDE
 .vscode/
@@ -44,30 +33,16 @@ out/
 .DS_Store
 Thumbs.db
 
-<<<<<<< HEAD
-# Node / Frontend
-node_modules/
-.next/
-out/
-.vercel
-
-# Qloo fixtures (private — never commit API responses)
+# Qloo fixtures (PRIVATE — never commit real API responses)
 fixtures/real/
+fixtures/private/
 *.qloo.json
 
-# Misc
-*.log
-coverage/
-.pytest_cache/
-=======
 # Testing
 .pytest_cache/
 .coverage
 htmlcov/
 
-# Qloo response fixtures (PRIVATE - never commit real API responses)
-fixtures/private/
-
-# Build
+# Build / Misc
 *.log
->>>>>>> 2730be3d98e74a2c3022042eccbb795b301d3e9e
+coverage/

@@ -22,6 +22,7 @@ export interface FamilyMember {
   generation: GenerationLabel;
   liked_items: Preference[];
   disliked_items: Preference[];
+  avatar_emoji?: string;
 }
 
 export interface ResolvedEntity {

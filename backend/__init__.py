@@ -1,2 +1,1 @@
-# Person B's backend modules
-"""Backend package."""
+"""FusionAI Backend Package."""
