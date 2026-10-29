@@ -30,8 +30,9 @@ logger = logging.getLogger(__name__)
 class EntityResolver:
     """Resolves raw text preferences into Qloo entities."""
 
-    def __init__(self):
+    def __init__(self, max_concurrency: int = 3):
         self.client = get_qloo_client()
+        self._semaphore = asyncio.Semaphore(max_concurrency)
 
     async def resolve_family(
         self,
@@ -182,11 +183,12 @@ class EntityResolver:
         entity_type = (preference.category or default_category).value
 
         try:
-            results = await self.client.search(
-                query=preference.text,
-                entity_type=entity_type,
-                limit=5,
-            )
+            async with self._semaphore:
+                results = await self.client.search(
+                    query=preference.text,
+                    entity_type=entity_type,
+                    limit=5,
+                )
         except QlooAPIError as e:
             logger.error(f"Qloo search failed for '{preference.text}': {e}")
             return None

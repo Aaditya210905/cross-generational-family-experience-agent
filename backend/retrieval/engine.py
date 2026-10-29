@@ -34,8 +34,9 @@ logger = logging.getLogger(__name__)
 class RetrievalEngine:
     """Builds the candidate pool from Qloo Insights queries."""
 
-    def __init__(self):
+    def __init__(self, max_concurrency: int = 2):
         self.client = get_qloo_client()
+        self._semaphore = asyncio.Semaphore(max_concurrency)
 
     async def build_candidate_pool(
         self,
@@ -126,6 +127,22 @@ class RetrievalEngine:
             pool_stats=stats,
         )
 
+    async def _get_insights_throttled(
+        self,
+        signal_ids: list[str],
+        entity_type: str,
+        limit: int,
+        location: Optional[str] = None,
+    ) -> list[dict]:
+        """Fetch insights throttled by concurrency semaphore."""
+        async with self._semaphore:
+            return await self.client.get_insights(
+                signal_ids=signal_ids,
+                entity_type=entity_type,
+                limit=limit,
+                location=location,
+            )
+
     async def _query_per_person(
         self,
         members: list[ResolvedMember],
@@ -147,7 +164,7 @@ class RetrievalEngine:
                 logger.warning(f"No signals for {member.nickname}, skipping query")
                 continue
 
-            tasks[member.member_id] = self.client.get_insights(
+            tasks[member.member_id] = self._get_insights_throttled(
                 signal_ids=signal_ids,
                 entity_type=category,
                 limit=25,
@@ -200,7 +217,7 @@ class RetrievalEngine:
                 unique_signals.append(sid)
 
         try:
-            results = await self.client.get_insights(
+            results = await self._get_insights_throttled(
                 signal_ids=unique_signals,
                 entity_type=category,
                 limit=30,

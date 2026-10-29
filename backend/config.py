@@ -24,7 +24,7 @@ class Settings(BaseSettings):
         description="Qloo hackathon API key",
     )
     qloo_base_url: str = Field(
-        default="https://api.qloo.com",
+        default="https://hackathon.api.qloo.com",
         description="Qloo API base URL (hackathon-specific)",
     )
     qloo_timeout_connect: float = Field(default=5.0, description="Connection timeout in seconds")

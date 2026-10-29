@@ -2,8 +2,8 @@
 Qloo API Client — The ONLY module that talks to Qloo.
 
 Handles:
-- Authentication (API key header)
-- Base URL configuration
+- Authentication (X-Api-Key header)
+- Base URL configuration (hackathon.api.qloo.com)
 - Timeouts and retries with exponential backoff
 - Rate-limit detection (429)
 - Response normalization into internal objects
@@ -47,33 +47,37 @@ class QlooRateLimitError(QlooAPIError):
 
 class QlooClient:
     """
-    Async client for the Qloo API.
+    Async client for the Qloo Hackathon Taste AI™ API.
     
     This is the single point of contact with Qloo. All other modules
     go through this client.
     """
 
-    # Known entity type mappings
+    # Official Qloo entity URN mappings
     ENTITY_TYPES = {
-        "movies": "movies",
-        "restaurants": "restaurants",
-        "activities": "activities",
-        "music": "music",
-        "tv_shows": "tv-shows",
-        "books": "books",
-        "podcasts": "podcasts",
+        "movies": "urn:entity:movie",
+        "movie": "urn:entity:movie",
+        "restaurants": "urn:entity:place",
+        "restaurant": "urn:entity:place",
+        "places": "urn:entity:place",
+        "place": "urn:entity:place",
+        "activities": "urn:entity:place",
+        "activity": "urn:entity:place",
+        "music": "urn:entity:artist",
+        "tv_shows": "urn:entity:tv_show",
+        "books": "urn:entity:book",
     }
 
     def __init__(self):
         self._client: Optional[httpx.AsyncClient] = None
 
     async def _get_client(self) -> httpx.AsyncClient:
-        """Get or create the HTTP client."""
+        """Get or create the HTTP client with hackathon authentication."""
         if self._client is None or self._client.is_closed:
             self._client = httpx.AsyncClient(
                 base_url=settings.qloo_base_url,
                 headers={
-                    "Authorization": f"Bearer {settings.qloo_api_key}",
+                    "X-Api-Key": settings.qloo_api_key,
                     "Content-Type": "application/json",
                     "Accept": "application/json",
                 },
@@ -133,23 +137,23 @@ class QlooClient:
         limit: int = 5,
     ) -> list[dict]:
         """
-        Search for entities matching a query.
+        Search for entities matching a query via GET /search.
 
         Args:
-            query: Search text (e.g., "Spirited Away", "Italian restaurants")
+            query: Search text (e.g., "Spirited Away", "The Godfather")
             entity_type: Optional entity type filter (e.g., "movies", "restaurants")
             limit: Max results to return
 
         Returns:
             List of normalized entity dicts with: id, name, type, tags, properties
         """
-        params = {
+        params: dict = {
             "query": query,
-            "limit": limit,
+            "take": limit,
         }
         if entity_type:
             mapped_type = self.ENTITY_TYPES.get(entity_type, entity_type)
-            params["type"] = mapped_type
+            params["types"] = mapped_type
 
         # Check cache
         cache_key = self._cache_key("/search", params)
@@ -191,7 +195,7 @@ class QlooClient:
         filters: Optional[dict] = None,
     ) -> list[dict]:
         """
-        Get taste-based recommendations from Qloo Insights.
+        Get taste-based recommendations from Qloo Insights via GET /v2/insights.
 
         Args:
             signal_ids: List of Qloo entity IDs to use as taste signals
@@ -203,22 +207,26 @@ class QlooClient:
         Returns:
             List of normalized entity dicts with affinity scores
         """
+        if not signal_ids:
+            return []
+
         mapped_type = self.ENTITY_TYPES.get(entity_type, entity_type)
 
-        payload: dict = {
-            "signals": [{"id": sid} for sid in signal_ids],
-            "type": mapped_type,
-            "limit": limit,
+        params: dict = {
+            "filter.type": mapped_type,
+            "signal.interests.entities": ",".join(signal_ids),
+            "take": limit,
         }
 
         if location:
-            payload["location"] = location
+            params["location"] = location
 
         if filters:
-            payload.update(filters)
+            for k, v in filters.items():
+                params[k] = v
 
         # Check cache
-        cache_key = self._cache_key("/v2/insights", payload)
+        cache_key = self._cache_key("/v2/insights", params)
         cached = cache.get(cache_key)
         if cached is not None:
             logger.info(f"Cache hit for insights: {len(signal_ids)} signals")
@@ -230,10 +238,10 @@ class QlooClient:
         # Make the API call
         client = await self._get_client()
         logger.info(
-            f"Qloo insights: {len(signal_ids)} signals, type={entity_type}, limit={limit}"
+            f"Qloo insights: {len(signal_ids)} signals, type={mapped_type}, limit={limit}"
         )
 
-        response = await client.post("/v2/insights", json=payload)
+        response = await client.get("/v2/insights", params=params)
         data = await self._handle_response(response)
 
         # Normalize results
@@ -248,12 +256,10 @@ class QlooClient:
         """
         Normalize Qloo search response into internal format.
         
-        Adapts to the actual API response structure. This method should be
-        updated after Phase 0 verification with real responses.
+        Qloo /search returns: {"results": [{"name": ..., "entity_id": ..., "types": [...], "tags": [...], "properties": {...}}]}
         """
         results = []
-        # Try common response shapes
-        items = raw_data if isinstance(raw_data, list) else raw_data.get("results", raw_data.get("data", raw_data.get("items", [])))
+        items = raw_data.get("results", []) if isinstance(raw_data, dict) else raw_data
 
         if isinstance(items, dict):
             items = [items]
@@ -261,12 +267,19 @@ class QlooClient:
         for item in items:
             if not isinstance(item, dict):
                 continue
+            
+            eid = item.get("entity_id") or item.get("id", "")
+            name = item.get("name") or item.get("title", "")
+            types = item.get("types", [])
+            primary_type = types[0] if (types and isinstance(types, list)) else (entity_type or "unknown")
+
             normalized = {
-                "id": item.get("id", item.get("entity_id", "")),
-                "name": item.get("name", item.get("title", "")),
-                "type": item.get("type", item.get("entity_type", entity_type or "unknown")),
+                "id": str(eid),
+                "name": str(name),
+                "type": str(primary_type),
                 "tags": self._extract_tags(item),
                 "properties": self._extract_properties(item),
+                "popularity": item.get("popularity", 0.0),
             }
             if normalized["id"] and normalized["name"]:
                 results.append(normalized)
@@ -277,25 +290,49 @@ class QlooClient:
         """
         Normalize Qloo insights response into internal format.
         
-        Extracts affinity scores and entity details.
+        Qloo /v2/insights returns: {"success": true, "results": {"entities": [{"name": ..., "entity_id": ..., "query": {"affinity": 0.96}, ...}]}}
         """
         results = []
-        items = raw_data if isinstance(raw_data, list) else raw_data.get("results", raw_data.get("data", raw_data.get("items", [])))
-
-        if isinstance(items, dict):
-            items = [items]
+        
+        # Handle {results: {entities: [...]}} or {results: [...]}
+        raw_results = raw_data.get("results", {}) if isinstance(raw_data, dict) else raw_data
+        if isinstance(raw_results, dict):
+            items = raw_results.get("entities", [])
+        elif isinstance(raw_results, list):
+            items = raw_results
+        else:
+            items = []
 
         for rank, item in enumerate(items):
             if not isinstance(item, dict):
                 continue
+
+            eid = item.get("entity_id") or item.get("id", "")
+            name = item.get("name") or item.get("title", "")
+            
+            # Affinity is in item["query"]["affinity"] or top-level "affinity"
+            query_meta = item.get("query")
+            affinity = None
+            if isinstance(query_meta, dict):
+                affinity = query_meta.get("affinity")
+            if affinity is None:
+                affinity = item.get("affinity", item.get("score"))
+            
+            # If no affinity score was returned, estimate by rank position
+            if affinity is None:
+                affinity = max(0.1, 1.0 - (rank * 0.03))
+
+            item_type = item.get("subtype") or item.get("type") or entity_type
+
             normalized = {
-                "id": item.get("id", item.get("entity_id", "")),
-                "name": item.get("name", item.get("title", "")),
-                "type": item.get("type", item.get("entity_type", entity_type)),
+                "id": str(eid),
+                "name": str(name),
+                "type": str(item_type),
                 "tags": self._extract_tags(item),
                 "properties": self._extract_properties(item),
-                "affinity": item.get("affinity", item.get("score", item.get("relevance", None))),
+                "affinity": float(affinity),
                 "rank": rank,
+                "popularity": item.get("popularity", 0.0),
             }
             if normalized["id"] and normalized["name"]:
                 results.append(normalized)
@@ -313,7 +350,9 @@ class QlooClient:
                     if isinstance(t, str):
                         tags.append(t)
                     elif isinstance(t, dict):
-                        tags.append(t.get("name", t.get("label", str(t))))
+                        tag_name = t.get("name") or t.get("label") or t.get("value")
+                        if tag_name:
+                            tags.append(str(tag_name))
             elif isinstance(val, str):
                 tags.append(val)
         return list(dict.fromkeys(tags))  # Dedupe while preserving order
@@ -326,7 +365,8 @@ class QlooClient:
             "location", "address", "price_level", "price", "rating",
             "runtime", "year", "release_date", "cuisine", "neighborhood",
             "image", "image_url", "thumbnail", "description", "url",
-            "latitude", "longitude", "city", "country",
+            "latitude", "longitude", "city", "country", "content_rating",
+            "hours", "business_rating",
         ]
         for key in property_keys:
             if key in item and item[key] is not None:
@@ -334,7 +374,9 @@ class QlooClient:
 
         # Check nested properties
         if "properties" in item and isinstance(item["properties"], dict):
-            props.update(item["properties"])
+            for k, v in item["properties"].items():
+                if k not in props and v is not None:
+                    props[k] = v
 
         return props
 
@@ -342,10 +384,9 @@ class QlooClient:
         """Check if the Qloo API is reachable and authenticated."""
         try:
             client = await self._get_client()
-            # Try a minimal search to verify auth
-            response = await client.get("/search", params={"query": "test", "limit": 1})
+            response = await client.get("/search", params={"query": "test", "take": 1})
             return {
-                "status": "healthy",
+                "status": "healthy" if response.status_code == 200 else "unhealthy",
                 "status_code": response.status_code,
                 "authenticated": response.status_code != 401,
             }
