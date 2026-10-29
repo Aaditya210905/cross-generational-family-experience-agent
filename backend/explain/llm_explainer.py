@@ -73,17 +73,21 @@ async def generate_explanations(
         Candidates with explanations filled in
     """
     settings = get_settings()
+    rate_limited = False
 
     for i, candidate in enumerate(candidates[:max_candidates]):
         evidence = build_evidence_packet(candidate, members)
 
         try:
-            if settings.openai_api_key:
+            if settings.openai_api_key and not rate_limited and i < 3:
                 explanation = await _call_llm(evidence, settings)
-                validated = _validate_explanation(explanation, evidence)
-                if validated:
-                    _apply_explanation(candidate, validated, members)
-                    continue
+                if explanation == "RATE_LIMITED":
+                    rate_limited = True
+                elif explanation:
+                    validated = _validate_explanation(explanation, evidence)
+                    if validated:
+                        _apply_explanation(candidate, validated, members)
+                        continue
 
             # Fallback to templates
             logger.info(f"Using template explanation for {candidate.entity.name}")
@@ -107,7 +111,7 @@ async def generate_explanations(
 async def _call_llm(
     evidence: Dict[str, Any],
     settings: Any,
-) -> Optional[Dict[str, Any]]:
+) -> Optional[Any]:
     try:
         from openai import AsyncOpenAI
 
@@ -137,6 +141,10 @@ async def _call_llm(
         logger.warning("openai package not available, using template fallback")
         return None
     except Exception as e:
+        err_str = str(e).lower()
+        if "429" in err_str or "rate_limit" in err_str:
+            logger.warning("LLM rate limit reached — gracefully switching to template explanations")
+            return "RATE_LIMITED"
         logger.warning(f"LLM call failed: {e}")
         return None
 

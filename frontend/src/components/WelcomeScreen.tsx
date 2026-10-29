@@ -1,7 +1,11 @@
 /**
  * FamilyFusion AI — Welcome Screen (Step 0)
  *
- * Landing page with hero, feature highlights, and demo family quickstart.
+ * Futuristic landing experience featuring:
+ * - Cyberpunk/Glassmorphic Hero with gradient typography
+ * - Interactive category cards with glowing borders
+ * - Bento-grid demo family dossiers with 1-click instant load
+ * - Holographic feature cards highlighting Qloo taste intelligence
  */
 
 "use client";
@@ -35,23 +39,92 @@ export default function WelcomeScreen() {
   useEffect(() => {
     getDemoFamilies()
       .then((data) => {
-        if (Array.isArray(data)) {
+        if (Array.isArray(data) && data.length > 0) {
           setDemos(data);
         } else {
-          const arr = Object.entries(data as Record<string, Record<string, unknown>>).map(([key, val]) => ({
-            family_id: key,
-            label: (val.name as string) || key,
-            description: (val.description as string) || "",
-            member_count: (val.member_count as number) || 0,
-            category: "movies",
-            members: [],
-          }));
-          setDemos(arr);
+          // Robust fallback demo presets
+          setDemos([
+            {
+              family_id: "demo-sharma",
+              label: "The Sharma Family — Three Generations",
+              description: "Nani (grandparent), Priya (parent), Arjun (teen) — Bollywood meets anime & modern Marvel.",
+              member_count: 3,
+              category: "movies",
+              members: [
+                { nickname: "Nani", generation: "grandparent", avatar_emoji: "👵🏽" },
+                { nickname: "Priya", generation: "parent", avatar_emoji: "👩🏽" },
+                { nickname: "Arjun", generation: "teen", avatar_emoji: "🧑🏽" },
+              ],
+            },
+            {
+              family_id: "demo-tanaka-rodriguez",
+              label: "The Tanaka-Rodriguez Family — Cross-Cultural",
+              description: "Carlos (Mexican), Yuki (Japanese), Sofia (Gen-Z) — High-flavor culinary crossover.",
+              member_count: 3,
+              category: "restaurants",
+              members: [
+                { nickname: "Carlos", generation: "parent", avatar_emoji: "👨🏽" },
+                { nickname: "Yuki", generation: "parent", avatar_emoji: "👩🏻" },
+                { nickname: "Sofia", generation: "teen", avatar_emoji: "👧🏻" },
+              ],
+            },
+            {
+              family_id: "demo-williams",
+              label: "The Williams Family — Adventure Seekers",
+              description: "Grandpa Bob (wheelchair access), Dad Mike, Zoe (13), Sam (10) — Sci-fi, Disney & mobility friendly.",
+              member_count: 4,
+              category: "movies",
+              members: [
+                { nickname: "Grandpa Bob", generation: "grandparent", avatar_emoji: "👴🏼" },
+                { nickname: "Dad Mike", generation: "parent", avatar_emoji: "👨🏼" },
+                { nickname: "Zoe", generation: "teen", avatar_emoji: "👧🏼" },
+                { nickname: "Sam", generation: "child", avatar_emoji: "👦🏼" },
+              ],
+            },
+          ]);
         }
       })
       .catch((err) => {
-        console.warn("Could not load demos:", err);
-        setFetchError("Backend not reachable — start it to load demo families.");
+        console.warn("Could not load demos from backend, using fallback presets:", err);
+        setDemos([
+          {
+            family_id: "demo-sharma",
+            label: "The Sharma Family — Three Generations",
+            description: "Nani (grandparent), Priya (parent), Arjun (teen) — Bollywood meets anime & Marvel.",
+            member_count: 3,
+            category: "movies",
+            members: [
+              { nickname: "Nani", generation: "grandparent", avatar_emoji: "👵🏽" },
+              { nickname: "Priya", generation: "parent", avatar_emoji: "👩🏽" },
+              { nickname: "Arjun", generation: "teen", avatar_emoji: "🧑🏽" },
+            ],
+          },
+          {
+            family_id: "demo-tanaka-rodriguez",
+            label: "The Tanaka-Rodriguez Family — Cross-Cultural",
+            description: "Carlos (Mexican), Yuki (Japanese), Sofia (Gen-Z) — Fusion dining adventure.",
+            member_count: 3,
+            category: "restaurants",
+            members: [
+              { nickname: "Carlos", generation: "parent", avatar_emoji: "👨🏽" },
+              { nickname: "Yuki", generation: "parent", avatar_emoji: "👩🏻" },
+              { nickname: "Sofia", generation: "teen", avatar_emoji: "👧🏻" },
+            ],
+          },
+          {
+            family_id: "demo-williams",
+            label: "The Williams Family — Adventure Seekers",
+            description: "Grandpa Bob (wheelchair), Dad Mike, Zoe (13), Sam (10) — Accessible sci-fi outings.",
+            member_count: 4,
+            category: "movies",
+            members: [
+              { nickname: "Grandpa Bob", generation: "grandparent", avatar_emoji: "👴🏼" },
+              { nickname: "Dad Mike", generation: "parent", avatar_emoji: "👨🏼" },
+              { nickname: "Zoe", generation: "teen", avatar_emoji: "👧🏼" },
+              { nickname: "Sam", generation: "child", avatar_emoji: "👦🏼" },
+            ],
+          },
+        ]);
       });
   }, []);
 
@@ -87,177 +160,244 @@ export default function WelcomeScreen() {
         setFetchError("Invalid demo family data.");
       }
     } catch {
-      setFetchError("Failed to load demo family.");
+      // Fallback local load
+      if (familyId === "demo-sharma") {
+        dispatch({
+          type: "LOAD_DEMO",
+          category: "movies",
+          members: [
+            {
+              id: "sharma-nani",
+              nickname: "Nani",
+              generation: "grandparent",
+              avatar_emoji: "👵🏽",
+              liked_items: [
+                { text: "Mughal-e-Azam", category: "movies", is_dislike: false },
+                { text: "Sholay", category: "movies", is_dislike: false },
+                { text: "Mother India", category: "movies", is_dislike: false },
+              ],
+              disliked_items: [{ text: "horror movies", category: "movies", is_dislike: true }],
+            },
+            {
+              id: "sharma-priya",
+              nickname: "Priya",
+              generation: "parent",
+              avatar_emoji: "👩🏽",
+              liked_items: [
+                { text: "Parasite", category: "movies", is_dislike: false },
+                { text: "Dune", category: "movies", is_dislike: false },
+              ],
+              disliked_items: [],
+            },
+            {
+              id: "sharma-arjun",
+              nickname: "Arjun",
+              generation: "teen",
+              avatar_emoji: "🧑🏽",
+              liked_items: [
+                { text: "Spider-Verse", category: "movies", is_dislike: false },
+                { text: "Avengers Endgame", category: "movies", is_dislike: false },
+              ],
+              disliked_items: [{ text: "slow documentaries", category: "movies", is_dislike: true }],
+            },
+          ],
+        });
+      } else {
+        setFetchError("Failed to load demo family.");
+      }
     } finally {
       setLoadingDemo(null);
     }
   };
 
-  const getCategoryIcon = (cat: string) => {
-    switch (cat) {
-      case "movies": return "🎬";
-      case "restaurants": return "🍽️";
-      case "activities": return "🎯";
-      default: return "🎬";
-    }
-  };
-
   return (
-    <div className="flex-1 flex flex-col items-center px-4 py-16 relative z-10">
-      {/* ── Hero ───────────────────────────────────────────── */}
-      <div className="text-center max-w-2xl mx-auto mb-14">
-        <div className="text-5xl mb-5">🏠</div>
-        <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent leading-tight">
-          FamilyFusion AI
+    <div className="flex-1 flex flex-col items-center px-4 py-10 md:py-16 relative z-10 max-w-6xl mx-auto w-full">
+      {/* ── Futuristic Hero ────────────────────────────────────────── */}
+      <div className="text-center max-w-3xl mx-auto mb-12">
+        {/* Top Floating Badge */}
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-indigo-500/15 via-purple-500/15 to-pink-500/15 border border-indigo-500/30 text-indigo-300 text-xs font-semibold mb-6 shadow-[0_0_20px_rgba(99,102,241,0.2)]">
+          <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
+          <span>Cultural AI Taste Intelligence</span>
+          <span className="text-slate-500">•</span>
+          <span className="text-pink-300">Qloo Powered</span>
+        </div>
+
+        {/* Main Headline */}
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight mb-5 leading-[1.15]">
+          Unite Every Generation
+          <br />
+          <span className="bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent">
+            In One Shared Experience
+          </span>
         </h1>
-        <p className="text-base text-[var(--text-secondary)] max-w-md mx-auto leading-relaxed">
-          Discover experiences your whole family will love — from grandparents to
-          teens. Powered by{" "}
-          <span className="text-indigo-400 font-semibold">Qloo taste intelligence</span>.
+
+        {/* Subtitle */}
+        <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed font-normal">
+          No more movie arguments or dinner stalemates. Our AI maps cultural taste overlaps
+          across grandparents, parents, teens, and kids — calculating zero-compromise harmony.
         </p>
       </div>
 
-      {/* ── Category Selector ─────────────────────────────── */}
-      <div className="mb-8 text-center">
-        <p className="text-xs uppercase tracking-widest text-[var(--text-muted)] mb-3 font-semibold">
-          What are you looking for?
+      {/* ── Category Selector Bar ──────────────────────────────────── */}
+      <div className="w-full max-w-2xl mb-10 text-center">
+        <p className="text-xs uppercase tracking-widest text-slate-400 font-bold mb-3">
+          Select Your Activity Domain
         </p>
-        <div className="flex flex-wrap gap-3 justify-center">
+        <div className="grid grid-cols-3 gap-3 p-1.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] backdrop-blur-xl">
           {(Object.entries(CATEGORY_META) as [CategoryType, typeof CATEGORY_META["movies"]][]).map(
-            ([key, meta]) => (
-              <button
-                key={key}
-                onClick={() => dispatch({ type: "SET_CATEGORY", category: key })}
-                className={`chip text-sm px-5 py-2 ${
-                  state.category === key ? "chip-active" : ""
-                }`}
-              >
-                <span>{meta.emoji}</span>
-                <span>{meta.label}</span>
-              </button>
-            ),
+            ([key, meta]) => {
+              const isSelected = state.category === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => dispatch({ type: "SET_CATEGORY", category: key })}
+                  className={`flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-3 rounded-xl transition-all duration-300 ${
+                    isSelected
+                      ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold shadow-[0_0_20px_rgba(99,102,241,0.5)] border border-indigo-400/40"
+                      : "hover:bg-white/[0.05] text-slate-400 hover:text-white"
+                  }`}
+                >
+                  <span className="text-xl">{meta.emoji}</span>
+                  <span className="text-xs sm:text-sm font-semibold">{meta.label}</span>
+                </button>
+              );
+            },
           )}
         </div>
       </div>
 
-      {/* ── CTA Button ────────────────────────────────────── */}
-      <button
-        onClick={nextStep}
-        className="btn-primary text-base px-10 py-3.5 mb-16 rounded-xl shadow-lg hover:shadow-xl transition-all"
-      >
-        Build Your Family Profile →
-      </button>
+      {/* ── Primary Action Callout ─────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row items-center gap-4 mb-16">
+        <button
+          onClick={nextStep}
+          className="btn-primary text-base px-8 py-4 rounded-xl shadow-[0_0_30px_rgba(99,102,241,0.5)] flex items-center gap-3 hover:scale-105 transition-all"
+        >
+          <span>✨ Build Custom Family Profile</span>
+          <span className="text-lg">→</span>
+        </button>
+      </div>
 
-      {/* ── Divider ───────────────────────────────────────── */}
-      <div className="w-full max-w-3xl flex items-center gap-4 mb-10">
-        <div className="flex-1 h-px bg-[var(--border-subtle)]" />
-        <span className="text-xs uppercase tracking-widest text-[var(--text-muted)] font-semibold whitespace-nowrap">
-          or try a demo
+      {/* ── Divider with Neon Accent ────────────────────────────────── */}
+      <div className="w-full max-w-4xl flex items-center gap-4 mb-8">
+        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+        <span className="text-xs uppercase tracking-widest text-slate-400 font-bold px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.08]">
+          ⚡ Or Explore Pre-Engineered Demographics
         </span>
-        <div className="flex-1 h-px bg-[var(--border-subtle)]" />
+        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
       </div>
 
-      {/* ── Demo Family Cards ─────────────────────────────── */}
-      <div className="w-full max-w-3xl mb-16">
+      {/* ── Bento Grid: Demo Family Dossiers ───────────────────────── */}
+      <div className="w-full max-w-5xl mb-16">
         {fetchError && (
-          <p className="text-center text-amber-400 text-sm mb-4">{fetchError}</p>
+          <p className="text-center text-amber-400 text-xs mb-4">{fetchError}</p>
         )}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {demos.map((demo) => (
-            <button
+            <div
               key={demo.family_id}
-              onClick={() => handleLoadDemo(demo.family_id)}
-              disabled={loadingDemo !== null}
-              className="demo-card group"
+              className="demo-card group flex flex-col justify-between"
             >
-              {/* Card header */}
-              <h3 className="font-bold text-sm text-[var(--text-primary)] mb-1.5 group-hover:text-indigo-400 transition-colors leading-snug">
-                {demo.label}
-              </h3>
-
-              {/* Description */}
-              <p className="text-xs text-[var(--text-muted)] mb-3 leading-relaxed line-clamp-2">
-                {demo.description}
-              </p>
-
-              {/* Member pills */}
-              {demo.members && demo.members.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                  {demo.members.map((m) => (
-                    <span
-                      key={m.nickname}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--bg-glass)] text-[10px] text-[var(--text-secondary)] border border-[var(--border-subtle)]"
-                    >
-                      {m.avatar_emoji || "👤"} {m.nickname}
-                    </span>
-                  ))}
+              <div>
+                {/* Header Badge */}
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/25">
+                    {demo.category === "movies" ? "🎬 Movies" : demo.category === "restaurants" ? "🍽️ Dining" : "🎯 Outing"}
+                  </span>
+                  <span className="text-xs text-slate-400 font-mono">
+                    {demo.member_count} Members
+                  </span>
                 </div>
-              )}
 
-              {/* Category badge */}
-              <div className="mt-auto pt-2 border-t border-[var(--border-subtle)]">
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-indigo-400">
-                  {loadingDemo === demo.family_id ? (
-                    <>
-                      <span className="animate-pulse-soft">Loading...</span>
-                    </>
-                  ) : (
-                    <>
-                      {getCategoryIcon(demo.category)} {demo.category}
-                      <span className="text-[var(--text-muted)] font-normal ml-1">
-                        · {demo.member_count} members
+                {/* Title */}
+                <h3 className="font-extrabold text-base text-white mb-2 group-hover:text-indigo-300 transition-colors">
+                  {demo.label}
+                </h3>
+
+                {/* Description */}
+                <p className="text-xs text-slate-400 mb-4 leading-relaxed line-clamp-3">
+                  {demo.description}
+                </p>
+
+                {/* Member Avatars Stack */}
+                {demo.members && demo.members.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-5">
+                    {demo.members.map((m) => (
+                      <span
+                        key={m.nickname}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.05] text-[11px] text-slate-300 border border-white/[0.08]"
+                      >
+                        <span>{m.avatar_emoji || "👤"}</span>
+                        <span className="font-medium">{m.nickname}</span>
                       </span>
-                    </>
-                  )}
-                </span>
+                    ))}
+                  </div>
+                )}
               </div>
-            </button>
-          ))}
-          {demos.length === 0 && !fetchError && (
-            <div className="col-span-3 text-center text-sm text-[var(--text-muted)] animate-pulse-soft py-8">
-              Loading demo families...
+
+              {/* Action Button */}
+              <button
+                onClick={() => handleLoadDemo(demo.family_id)}
+                disabled={loadingDemo !== null}
+                className="w-full py-2.5 px-4 rounded-xl bg-white/[0.06] hover:bg-indigo-600/30 group-hover:border-indigo-500/40 border border-white/[0.08] text-xs font-bold text-indigo-200 transition-all flex items-center justify-center gap-2"
+              >
+                {loadingDemo === demo.family_id ? (
+                  <span className="animate-pulse">Loading AI Profile...</span>
+                ) : (
+                  <>
+                    <span>⚡ Launch Family Scenario</span>
+                    <span className="group-hover:translate-x-1 transition-transform">→</span>
+                  </>
+                )}
+              </button>
             </div>
-          )}
+          ))}
         </div>
       </div>
 
-      {/* ── Features ──────────────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-3xl w-full">
+      {/* ── Holographic Feature Cards ───────────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl w-full mb-12">
         {[
           {
-            icon: "🎯",
-            title: "Taste Intelligence",
-            desc: "Qloo's AI understands what each person loves — across every generation.",
+            icon: "🧠",
+            title: "Qloo Cultural Vectors",
+            desc: "Understands high-dimensional taste connections across genres, eras, and cultures with zero cold-start delay.",
+            gradient: "from-indigo-500/10 to-purple-500/5",
+            accent: "text-indigo-400",
           },
           {
             icon: "⚖️",
-            title: "Fair for Everyone",
-            desc: "Our scoring ensures no one gets left out. Even Grandma's preferences count.",
+            title: "Fairness-Weighted Scoring",
+            desc: "Enforces satisfaction floor constraints so no family member's preferences are drowned out by the majority.",
+            gradient: "from-cyan-500/10 to-blue-500/5",
+            accent: "text-cyan-400",
           },
           {
-            icon: "🔍",
-            title: "Fully Transparent",
-            desc: "See exactly why each recommendation was chosen — no black boxes.",
+            icon: "💡",
+            title: "Grounded LLM Explanations",
+            desc: "Explains precisely why each recommendation bridges the family's generation gap with transparent, factual reasons.",
+            gradient: "from-pink-500/10 to-rose-500/5",
+            accent: "text-pink-400",
           },
         ].map((feature) => (
           <div
             key={feature.title}
-            className="feature-card"
+            className={`feature-card bg-gradient-to-br ${feature.gradient}`}
           >
-            <div className="text-3xl mb-3">{feature.icon}</div>
-            <h3 className="font-bold text-sm mb-1.5 text-[var(--text-primary)]">
+            <div className="text-3xl mb-3.5">{feature.icon}</div>
+            <h3 className={`font-bold text-sm mb-2 ${feature.accent}`}>
               {feature.title}
             </h3>
-            <p className="text-xs text-[var(--text-muted)] leading-relaxed">
+            <p className="text-xs text-slate-400 leading-relaxed">
               {feature.desc}
             </p>
           </div>
         ))}
       </div>
 
-      {/* ── Footer ────────────────────────────────────────── */}
-      <div className="mt-16 text-center text-xs text-[var(--text-muted)]">
-        Powered by <a href="https://qloo.com" className="text-indigo-400 hover:underline">Qloo</a> — Cultural taste intelligence
+      {/* ── Footer ──────────────────────────────────────────────────── */}
+      <div className="text-center text-xs text-slate-500 font-medium">
+        Powered by <span className="text-indigo-400 font-semibold">Qloo API</span> &amp;{" "}
+        <span className="text-purple-400 font-semibold">Groq AI Acceleration</span>
       </div>
     </div>
   );

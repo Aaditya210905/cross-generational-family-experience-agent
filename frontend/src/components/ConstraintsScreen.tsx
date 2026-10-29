@@ -1,30 +1,28 @@
 /**
  * FamilyFusion AI — Constraints Screen (Step 3)
  *
- * Configure hard/soft constraints before generating recommendations.
- * Person A owns this screen (Person B owns the constraint engine that filters).
+ * Bento-grid constraints controller configuring hard & soft filters.
  */
 
 "use client";
 
 import { useState } from "react";
 import { useFamilyState } from "@/lib/store";
-import { resolvePreferences, retrieveCandidates } from "@/lib/api";
 import type { ConstraintConfig, BudgetBand, EnergyLevel } from "@/lib/types";
 
 const BUDGET_OPTIONS: { value: BudgetBand; label: string; emoji: string }[] = [
   { value: "free", label: "Free", emoji: "🆓" },
-  { value: "low", label: "Budget", emoji: "💵" },
-  { value: "medium", label: "Moderate", emoji: "💰" },
-  { value: "high", label: "Splurge", emoji: "💎" },
-  { value: "any", label: "Any", emoji: "🤷" },
+  { value: "low", label: "Budget ($)", emoji: "💵" },
+  { value: "medium", label: "Moderate ($$)", emoji: "💰" },
+  { value: "high", label: "Splurge ($$$)", emoji: "💎" },
+  { value: "any", label: "Any Budget", emoji: "🤷" },
 ];
 
 const ENERGY_OPTIONS: { value: EnergyLevel; label: string; emoji: string }[] = [
-  { value: "low", label: "Low-key", emoji: "🛋️" },
-  { value: "medium", label: "Moderate", emoji: "🚶" },
-  { value: "high", label: "Active", emoji: "🏃" },
-  { value: "any", label: "Any", emoji: "🤷" },
+  { value: "low", label: "Low-key / Relaxed", emoji: "🛋️" },
+  { value: "medium", label: "Moderate Walk", emoji: "🚶" },
+  { value: "high", label: "Active & Energetic", emoji: "🏃" },
+  { value: "any", label: "Any Level", emoji: "🤷" },
 ];
 
 const DIETARY_OPTIONS = [
@@ -64,173 +62,162 @@ export default function ConstraintsScreen() {
   const handleGenerate = async () => {
     setIsProcessing(true);
     setError(null);
+    setProcessingStep("🚀 Initializing Qloo recommendation pipeline...");
 
     // Save constraints to state
     dispatch({ type: "SET_CONSTRAINTS", constraints });
 
-    try {
-      // Step 1: Resolve entities
-      setProcessingStep("🔍 Resolving preferences with Qloo...");
-      const resolved = await resolvePreferences({
-        members: state.members.map((m) => ({
-          id: m.id,
-          nickname: m.nickname,
-          generation: m.generation,
-          liked_items: m.liked_items.map((p) => ({
-            text: p.text,
-            category: p.category,
-            is_dislike: false,
-          })),
-          disliked_items: m.disliked_items.map((p) => ({
-            text: p.text,
-            category: p.category,
-            is_dislike: true,
-          })),
-        })),
-        category: state.category,
-      });
-
-      // Step 2: Retrieve candidates
-      setProcessingStep("🧠 Finding recommendations for everyone...");
-      const candidates = await retrieveCandidates({
-        profile: resolved,
-        category: state.category,
-        location: constraints.location || undefined,
-      });
-
-      // Step 3: Move to results (Person B's territory)
-      setProcessingStep("✨ Preparing results...");
-
-      // Store the candidate pool for Person B's results screen
-      // Using sessionStorage as a simple handoff mechanism
-      sessionStorage.setItem(
-        "familyfusion_candidate_pool",
-        JSON.stringify(candidates),
-      );
-      sessionStorage.setItem(
-        "familyfusion_resolved_profile",
-        JSON.stringify(resolved),
-      );
-      sessionStorage.setItem(
-        "familyfusion_constraints",
-        JSON.stringify(constraints),
-      );
-
+    // Transition straight to Results (which streams live progress and runs pipeline)
+    setTimeout(() => {
       dispatch({ type: "SET_STEP", step: 4 });
-    } catch (err) {
-      console.error("Generation error:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to generate recommendations. Is the backend running?",
-      );
-    } finally {
       setIsProcessing(false);
-      setProcessingStep("");
-    }
+    }, 400);
   };
 
   const showDietary = state.category === "restaurants";
 
   return (
-    <div className="flex-1 flex flex-col items-center px-4 py-8 relative z-10">
-      <div className="w-full max-w-2xl">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold mb-2">⚙️ Any constraints?</h2>
-          <p className="text-[var(--ff-text-muted)] text-sm">
-            Set optional limits. We'll filter results to match.
-          </p>
+    <div className="flex-1 flex flex-col items-center px-4 py-8 pb-20 relative z-10 max-w-4xl mx-auto w-full">
+      {/* ── Header ───────────────────────────────────────────────── */}
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs font-semibold mb-3">
+          <span>Step 3 • Boundaries &amp; Filters</span>
         </div>
+        <h2 className="text-3xl font-extrabold tracking-tight text-white mb-2">
+          ⚙️ Fine-Tune Constraints &amp; Context
+        </h2>
+        <p className="text-sm text-slate-400 max-w-md mx-auto">
+          Tailor the recommendation envelope for location, budget, physical accessibility, and energy.
+        </p>
+      </div>
 
-        {/* Setting / At Home toggle */}
-        <div className="glass-card p-5 mb-4">
-          <label className="text-sm font-semibold mb-3 block">
-            📍 Setting
-          </label>
-          <div className="flex gap-3">
-            <button
-              onClick={() => updateConstraint("at_home", false)}
-              className={`chip flex-1 justify-center py-3 ${
-                !constraints.at_home ? "chip-active" : ""
-              }`}
-            >
-              🏙️ Going Out
-            </button>
-            <button
-              onClick={() => updateConstraint("at_home", true)}
-              className={`chip flex-1 justify-center py-3 ${
-                constraints.at_home ? "chip-active" : ""
-              }`}
-            >
-              🏠 At Home
-            </button>
+      {/* ── Bento Grid ───────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 w-full mb-8">
+        {/* Tile 1: Setting & Location */}
+        <div className="glass-card p-6 border border-white/[0.08] flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                <span>📍 Setting &amp; Venue</span>
+              </span>
+              <span className="text-xs text-indigo-400 font-medium">
+                {constraints.at_home ? "Home Comfort" : "Going Out"}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5 mb-4">
+              <button
+                onClick={() => updateConstraint("at_home", false)}
+                className={`py-3 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  !constraints.at_home
+                    ? "bg-indigo-600/30 border-indigo-500 text-white shadow-[0_0_16px_rgba(99,102,241,0.3)]"
+                    : "bg-white/[0.03] border-white/10 text-slate-400 hover:text-white"
+                }`}
+              >
+                <span>🏙️ Going Out</span>
+              </button>
+              <button
+                onClick={() => updateConstraint("at_home", true)}
+                className={`py-3 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  constraints.at_home
+                    ? "bg-indigo-600/30 border-indigo-500 text-white shadow-[0_0_16px_rgba(99,102,241,0.3)]"
+                    : "bg-white/[0.03] border-white/10 text-slate-400 hover:text-white"
+                }`}
+              >
+                <span>🛋️ Cozy at Home</span>
+              </button>
+            </div>
           </div>
 
           {!constraints.at_home && (
-            <div className="mt-4">
+            <div>
+              <label className="text-xs text-slate-400 font-medium block mb-1.5">
+                Target City or Neighborhood:
+              </label>
               <input
                 type="text"
-                placeholder="City or area (e.g. San Francisco)"
+                placeholder="e.g. San Francisco, New York, Mumbai, Tokyo"
                 value={constraints.location || ""}
                 onChange={(e) => updateConstraint("location", e.target.value)}
-                className="w-full wizard-input"
+                className="wizard-input text-xs"
               />
             </div>
           )}
         </div>
 
-        {/* Budget */}
-        <div className="glass-card p-5 mb-4">
-          <label className="text-sm font-semibold mb-3 block">
-            💰 Budget
-          </label>
-          <div className="flex flex-wrap gap-2">
+        {/* Tile 2: Budget */}
+        <div className="glass-card p-6 border border-white/[0.08]">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              💰 Budget Target
+            </span>
+            <span className="text-xs text-indigo-400 font-mono capitalize">
+              {constraints.budget}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {BUDGET_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
                 onClick={() => updateConstraint("budget", opt.value)}
-                className={`chip ${
-                  constraints.budget === opt.value ? "chip-active" : ""
+                className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+                  constraints.budget === opt.value
+                    ? "bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border-emerald-500/50 text-emerald-300 shadow-[0_0_14px_rgba(16,185,129,0.25)] font-bold"
+                    : "bg-white/[0.03] border-white/10 text-slate-400 hover:text-white hover:bg-white/[0.06]"
                 }`}
               >
                 <span>{opt.emoji}</span>
-                <span>{opt.label}</span>
+                <span className="truncate">{opt.label}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Energy */}
-        <div className="glass-card p-5 mb-4">
-          <label className="text-sm font-semibold mb-3 block">
-            ⚡ Energy Level
-          </label>
-          <div className="flex flex-wrap gap-2">
+        {/* Tile 3: Energy Level */}
+        <div className="glass-card p-6 border border-white/[0.08]">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              ⚡ Energy &amp; Activity Intensity
+            </span>
+            <span className="text-xs text-indigo-400 font-mono capitalize">
+              {constraints.energy_level}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
             {ENERGY_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
                 onClick={() => updateConstraint("energy_level", opt.value)}
-                className={`chip ${
-                  constraints.energy_level === opt.value ? "chip-active" : ""
+                className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+                  constraints.energy_level === opt.value
+                    ? "bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-purple-500/50 text-purple-300 shadow-[0_0_14px_rgba(168,85,247,0.25)] font-bold"
+                    : "bg-white/[0.03] border-white/10 text-slate-400 hover:text-white hover:bg-white/[0.06]"
                 }`}
               >
                 <span>{opt.emoji}</span>
-                <span>{opt.label}</span>
+                <span className="truncate">{opt.label}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Time */}
-        <div className="glass-card p-5 mb-4">
-          <label className="text-sm font-semibold mb-3 block">
-            ⏱️ Time Available (optional)
-          </label>
+        {/* Tile 4: Duration / Time Available */}
+        <div className="glass-card p-6 border border-white/[0.08] flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              ⏱️ Time Available
+            </span>
+            <span className="text-xs text-indigo-400 font-mono">
+              {constraints.time_available_minutes ? `${constraints.time_available_minutes} mins` : "Flexible"}
+            </span>
+          </div>
+
           <div className="flex items-center gap-3">
             <input
               type="number"
-              placeholder="Minutes"
+              placeholder="e.g. 120"
               min={15}
               max={480}
               value={constraints.time_available_minutes || ""}
@@ -240,88 +227,110 @@ export default function ConstraintsScreen() {
                   e.target.value ? parseInt(e.target.value) : undefined,
                 )
               }
-              className="w-32 wizard-input"
+              className="wizard-input flex-1 text-xs"
             />
-            <span className="text-sm text-[var(--ff-text-muted)]">minutes</span>
+            <span className="text-xs text-slate-400 font-medium whitespace-nowrap">
+              minutes total
+            </span>
+          </div>
+
+          <div className="flex gap-1.5 mt-3">
+            {[60, 90, 120, 180].map((mins) => (
+              <button
+                key={mins}
+                onClick={() => updateConstraint("time_available_minutes", mins)}
+                className="text-[11px] px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/10 text-slate-400 hover:text-white border border-white/10 cursor-pointer"
+              >
+                {mins}m
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Dietary (restaurants only) */}
+        {/* Tile 5: Dietary Restrictions (conditional) */}
         {showDietary && (
-          <div className="glass-card p-5 mb-4">
-            <label className="text-sm font-semibold mb-3 block">
-              🥗 Dietary Restrictions
-            </label>
+          <div className="glass-card p-6 border border-white/[0.08] md:col-span-2">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+                🥗 Dietary Restrictions
+              </span>
+              <span className="text-xs text-slate-400 font-mono">
+                {constraints.dietary_restrictions.length} selected
+              </span>
+            </div>
+
             <div className="flex flex-wrap gap-2">
-              {DIETARY_OPTIONS.map((opt) => (
-                <button
-                  key={opt}
-                  onClick={() => toggleDietary(opt)}
-                  className={`chip ${
-                    constraints.dietary_restrictions.includes(opt)
-                      ? "chip-active"
-                      : ""
-                  }`}
-                >
-                  {opt}
-                </button>
-              ))}
+              {DIETARY_OPTIONS.map((opt) => {
+                const isSelected = constraints.dietary_restrictions.includes(opt);
+                return (
+                  <button
+                    key={opt}
+                    onClick={() => toggleDietary(opt)}
+                    className={`chip text-xs px-3.5 py-1.5 transition-all cursor-pointer ${
+                      isSelected ? "chip-active font-bold" : "opacity-75 hover:opacity-100"
+                    }`}
+                  >
+                    <span>{isSelected ? "✓" : "+"}</span>
+                    <span>{opt}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
 
-        {/* Mobility */}
-        <div className="glass-card p-5 mb-6">
-          <label className="text-sm font-semibold mb-3 block">
-            ♿ Mobility Notes (optional)
-          </label>
+        {/* Tile 6: Mobility & Notes */}
+        <div className={`glass-card p-6 border border-white/[0.08] ${showDietary ? "md:col-span-2" : "md:col-span-2"}`}>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              ♿ Accessibility &amp; Special Accommodations
+            </span>
+            <span className="text-[11px] text-slate-500">Optional</span>
+          </div>
           <input
             type="text"
-            placeholder="e.g. Wheelchair accessible required"
+            placeholder="e.g. Wheelchair accessible entrance required, stroller friendly, low noise seating"
             value={constraints.mobility_notes || ""}
             onChange={(e) => updateConstraint("mobility_notes", e.target.value)}
-            className="w-full wizard-input"
+            className="wizard-input text-xs"
           />
         </div>
+      </div>
 
-        {/* Error */}
-        {error && (
-          <div className="glass-card p-4 mb-4 border-red-500/30 bg-red-500/5">
-            <p className="text-red-400 text-sm">{error}</p>
-          </div>
-        )}
-
-        {/* Processing overlay */}
-        {isProcessing && (
-          <div className="glass-card p-6 mb-6 text-center">
-            <div className="animate-pulse-soft text-lg mb-2">
-              {processingStep}
-            </div>
-            <div className="w-full bg-[var(--ff-border)] rounded-full h-1.5 overflow-hidden">
-              <div className="bg-indigo-500 h-full rounded-full animate-[pulse_1.5s_ease-in-out_infinite] w-2/3" />
-            </div>
-          </div>
-        )}
-
-        {/* Navigation */}
-        <div className="flex justify-between items-center pt-4 border-t border-[var(--ff-border)]">
-          <button
-            onClick={prevStep}
-            disabled={isProcessing}
-            className="btn-secondary"
-          >
-            ← Preferences
-          </button>
-          <button
-            onClick={handleGenerate}
-            disabled={isProcessing}
-            className="btn-primary text-lg px-8 py-3"
-          >
-            {isProcessing ? "Generating..." : "✨ Find Experiences"}
-          </button>
+      {/* ── Error Banner ──────────────────────────────────────────── */}
+      {error && (
+        <div className="glass-card p-4 mb-6 border border-rose-500/30 bg-rose-500/10 w-full text-center">
+          <p className="text-rose-300 text-xs font-medium">⚠️ {error}</p>
         </div>
+      )}
+
+      {/* ── Processing Overlay ────────────────────────────────────── */}
+      {isProcessing && (
+        <div className="glass-card p-6 mb-6 text-center w-full border border-indigo-500/30">
+          <div className="animate-pulse-soft text-sm font-semibold text-indigo-300 mb-2">
+            {processingStep}
+          </div>
+          <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full animate-pulse w-3/4" />
+          </div>
+        </div>
+      )}
+
+      {/* ── Footer Navigation ─────────────────────────────────────── */}
+      <div className="w-full flex items-center justify-between pt-5 border-t border-white/[0.08]">
+        <button onClick={prevStep} disabled={isProcessing} className="btn-secondary text-sm px-5 py-2.5">
+          ← Preferences
+        </button>
+
+        <button
+          onClick={handleGenerate}
+          disabled={isProcessing}
+          className="btn-primary text-base px-9 py-3.5 rounded-xl shadow-[0_0_25px_rgba(99,102,241,0.6)] flex items-center gap-2.5 hover:scale-105"
+        >
+          <span>✨ Discover AI Recommendations</span>
+          <span className="text-lg">→</span>
+        </button>
       </div>
     </div>
   );
 }
-
