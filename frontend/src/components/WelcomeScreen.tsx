@@ -215,26 +215,25 @@ export default function WelcomeScreen() {
       {/* ── Futuristic Hero ────────────────────────────────────────── */}
       <div className="text-center max-w-3xl mx-auto mb-12">
         {/* Top Floating Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-indigo-500/15 via-purple-500/15 to-pink-500/15 border border-indigo-500/30 text-indigo-300 text-xs font-semibold mb-6 shadow-[0_0_20px_rgba(99,102,241,0.2)]">
-          <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-violet-500/20 via-fuchsia-500/20 to-pink-500/20 border border-violet-400/40 text-violet-300 text-xs font-semibold mb-6 shadow-[0_0_30px_rgba(139,92,246,0.25)]">
+          <span className="w-2 h-2 rounded-full bg-violet-400 animate-pulse shadow-[0_0_8px_#a78bfa]" />
           <span>Cultural AI Taste Intelligence</span>
-          <span className="text-slate-500">•</span>
-          <span className="text-pink-300">Qloo Powered</span>
+          <span className="text-slate-600">•</span>
+          <span className="text-fuchsia-300">Qloo Powered</span>
         </div>
 
         {/* Main Headline */}
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight mb-5 leading-[1.15]">
+        <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight mb-6 leading-[1.1]">
           Unite Every Generation
           <br />
-          <span className="bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent">
+          <span className="text-gradient">
             In One Shared Experience
           </span>
         </h1>
 
         {/* Subtitle */}
-        <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed font-normal">
-          No more movie arguments or dinner stalemates. Our AI maps cultural taste overlaps
-          across grandparents, parents, teens, and kids — calculating zero-compromise harmony.
+        <p className="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
+          No more movie arguments or dinner stalemates. Map cultural taste overlaps across all ages — find experiences the whole family genuinely loves.
         </p>
       </div>
 
