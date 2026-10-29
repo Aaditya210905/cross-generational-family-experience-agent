@@ -23,6 +23,7 @@ from backend.models.entities import (
     ConfidenceLevel,
 )
 from backend.models.family import FamilyMember, Preference, CategoryType
+from backend.llm import expand_preference_for_qloo, is_llm_available
 
 logger = logging.getLogger(__name__)
 
@@ -191,19 +192,51 @@ class EntityResolver:
                 )
         except QlooAPIError as e:
             logger.error(f"Qloo search failed for '{preference.text}': {e}")
-            return None
+            results = []
+
+        confidence = self._score_confidence(preference.text, results[0]) if results else ConfidenceLevel.UNRESOLVED
+
+        # If Qloo returned no results or low confidence (e.g. vague phrase like "Bollywood classics"),
+        # use LLM query expansion to find canonical entity titles for Qloo to search
+        if (not results or confidence in (ConfidenceLevel.LOW, ConfidenceLevel.UNRESOLVED)) and is_llm_available():
+            try:
+                expanded_queries = await expand_preference_for_qloo(preference.text, entity_type)
+                for exp_q in expanded_queries:
+                    if exp_q.lower() == preference.text.lower():
+                        continue
+                    try:
+                        async with self._semaphore:
+                            exp_results = await self.client.search(
+                                query=exp_q,
+                                entity_type=entity_type,
+                                limit=3,
+                            )
+                        if exp_results:
+                            if not results or confidence == ConfidenceLevel.LOW:
+                                # Expanded canonical search is much higher quality than a weak partial match
+                                results = exp_results + (results or [])
+                                top = exp_results[0]
+                                confidence = ConfidenceLevel.MEDIUM
+                                break
+                            else:
+                                results.extend(exp_results)
+                    except Exception as err:
+                        logger.debug(f"Expanded Qloo search failed for '{exp_q}': {err}")
+            except Exception as e:
+                logger.warning(f"LLM query expansion fallback failed: {e}")
 
         if not results:
             logger.warning(f"No results for '{preference.text}'")
             return None
 
         top = results[0]
-        confidence = self._score_confidence(preference.text, top)
+        if confidence == ConfidenceLevel.UNRESOLVED:
+            confidence = self._score_confidence(preference.text, top)
 
         # Build alternatives for ambiguous matches
         alternatives = []
         if confidence in (ConfidenceLevel.LOW, ConfidenceLevel.MEDIUM) and len(results) > 1:
-            for alt in results[1:3]:  # Include up to 2 alternatives
+            for alt in results[1:4]:  # Include up to 3 alternatives
                 alternatives.append(ResolvedEntity(
                     qloo_id=alt["id"],
                     name=alt["name"],

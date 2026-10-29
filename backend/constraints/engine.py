@@ -17,6 +17,9 @@ All rules are deterministic and keyword-based.
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Tuple
+import logging
+
+logger = logging.getLogger(__name__)
 
 from contracts.models import (
     ConstraintResult,
@@ -140,6 +143,48 @@ class ConstraintEngine:
 
         # Re-sort after penalties
         passed.sort(key=lambda c: c.group_score, reverse=True)
+        return passed, filtered
+
+    async def apply_all_async(
+        self,
+        candidates: List[ScoredCandidate],
+        constraints: Constraints,
+    ) -> Tuple[List[ScoredCandidate], List[ScoredCandidate]]:
+        """
+        Apply all constraints deterministically, then use LLM to resolve
+        any UNVERIFIED flags on top candidates.
+        """
+        passed, filtered = self.apply_all(candidates, constraints)
+
+        from backend.llm import is_llm_available, evaluate_constraint_with_llm
+
+        if is_llm_available():
+            for c in passed[:6]:
+                for i, cr in enumerate(c.constraint_results):
+                    if cr.status == ConstraintStatus.UNVERIFIED and cr.constraint_name in ("Mobility", "Energy Level", "Category"):
+                        try:
+                            val = getattr(constraints, cr.constraint_name.lower().replace(" ", "_"), None)
+                            if val is not None and hasattr(val, "value"):
+                                val = val.value
+                            elif val is None and cr.constraint_name == "Mobility":
+                                val = constraints.mobility_notes
+                            eval_res = await evaluate_constraint_with_llm(
+                                name=c.entity.name,
+                                entity_type=c.entity.type,
+                                tags=c.tags,
+                                constraint_name=cr.constraint_name,
+                                constraint_value=val or "standard",
+                            )
+                            if eval_res and eval_res.get("status") in ("pass", "warning", "fail"):
+                                c.constraint_results[i] = ConstraintResult(
+                                    constraint_name=cr.constraint_name,
+                                    constraint_type=cr.constraint_type,
+                                    status=ConstraintStatus(eval_res["status"]),
+                                    message=eval_res["reason"],
+                                )
+                        except Exception as e:
+                            logger.debug(f"LLM constraint check skipped: {e}")
+
         return passed, filtered
 
     def _evaluate(

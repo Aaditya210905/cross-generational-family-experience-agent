@@ -76,6 +76,20 @@ async def generate_explanations(
     rate_limited = False
 
     for i, candidate in enumerate(candidates[:max_candidates]):
+        # Enrich with semantic bridge themes if none exist
+        if not candidate.bridge_themes and settings.openai_api_key and i < 3:
+            from backend.llm import discover_semantic_bridges
+            try:
+                bridges = await discover_semantic_bridges(
+                    candidate.entity.name,
+                    candidate.tags,
+                    [{"nickname": m.nickname, "generation": m.generation.value, "liked_items": m.liked_items} for m in members]
+                )
+                if bridges:
+                    candidate.bridge_themes = bridges
+            except Exception as e:
+                logger.debug(f"Bridge discovery skipped: {e}")
+
         evidence = build_evidence_packet(candidate, members)
 
         try:

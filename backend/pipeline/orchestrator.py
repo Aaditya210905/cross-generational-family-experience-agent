@@ -26,14 +26,18 @@ from backend.ranking.scorer import GroupScorer, ScoringConfig
 from contracts.demo_families import get_demo_pool
 from contracts.models import (
     AdjustmentSet,
+    Candidate,
     CandidatePool,
     Category,
+    ConfidenceLevel,
     Constraints,
+    DataSource,
     FamilyMember,
     FeedbackRequest,
     PersonScore,
     ProgressEvent,
     RankedResults,
+    ResolvedEntity,
     ScoreSource,
     ScoredCandidate,
 )
@@ -219,7 +223,7 @@ class PipelineOrchestrator:
         )
 
         engine = ConstraintEngine()
-        passed, filtered = engine.apply_all(scored, constraints)
+        passed, filtered = await engine.apply_all_async(scored, constraints)
 
         await self._emit_progress(
             family_id, "constrain", "completed",
@@ -274,6 +278,89 @@ class PipelineOrchestrator:
 
     # ─── Candidate Pool Retrieval ────────────────────────────────────────
 
+    async def _retrieve_live_qloo_pool(
+        self,
+        members: List[FamilyMember],
+        constraints: Constraints,
+        category: Category,
+        family_id: str,
+    ) -> Optional[CandidatePool]:
+        """Call Person A's real Qloo EntityResolver and RetrievalEngine live."""
+        try:
+            from backend.resolution.resolver import EntityResolver
+            from backend.retrieval.engine import RetrievalEngine
+            from backend.models.family import FamilyMember as P_Member, Preference as P_Pref, CategoryType as P_Cat
+
+            cat_val = category.value if hasattr(category, "value") else str(category).lower()
+            if "restaurant" in cat_val:
+                p_cat = P_Cat.RESTAURANTS
+            elif "activit" in cat_val:
+                p_cat = P_Cat.ACTIVITIES
+            else:
+                p_cat = P_Cat.MOVIES
+
+            p_members = []
+            for m in members:
+                likes = [P_Pref(text=item, category=p_cat, is_dislike=False) for item in m.liked_items]
+                dislikes = [P_Pref(text=item, category=p_cat, is_dislike=True) for item in m.disliked_items]
+                p_members.append(P_Member(
+                    id=m.id,
+                    nickname=m.nickname,
+                    generation=m.generation.value,
+                    liked_items=likes,
+                    disliked_items=dislikes,
+                ))
+
+            resolver = EntityResolver()
+            resolved_profile = await resolver.resolve_family(p_members, p_cat)
+
+            retriever = RetrievalEngine()
+            live_pool = await retriever.build_candidate_pool(
+                profile=resolved_profile,
+                category=category.value,
+                location=constraints.location if constraints.location != "at_home" else None,
+            )
+
+            if live_pool and live_pool.candidates:
+                converted_candidates = []
+                for c in live_pool.candidates:
+                    per_person = {}
+                    for ps in c.per_person_scores:
+                        m_obj = next((m for m in members if m.id == ps.member_id), None)
+                        per_person[ps.member_id] = PersonScore(
+                            member_id=ps.member_id,
+                            nickname=m_obj.nickname if m_obj else ps.member_id,
+                            score=ps.score,
+                            source=ScoreSource.REAL if ps.source.value == "direct" else ScoreSource.ESTIMATED,
+                        )
+
+                    converted_candidates.append(Candidate(
+                        entity=ResolvedEntity(
+                            qloo_id=c.entity_id,
+                            name=c.name,
+                            type=c.entity_type,
+                            confidence=ConfidenceLevel.EXACT,
+                            tags=c.tags,
+                        ),
+                        source_members=c.source_members,
+                        per_person_scores=per_person,
+                        tags=c.tags,
+                        metadata=c.properties,
+                        data_source=DataSource.LIVE_QLOO,
+                    ))
+
+                logger.info(f"Retrieved {len(converted_candidates)} candidates LIVE from Qloo!")
+                return CandidatePool(
+                    candidates=converted_candidates,
+                    members=members,
+                    family_id=family_id,
+                    category=category,
+                    constraints=constraints,
+                )
+        except Exception as e:
+            logger.warning(f"Live Qloo retrieval failed: {e}, falling back to fixture")
+            return None
+
     async def _get_candidate_pool(
         self,
         members: List[FamilyMember],
@@ -283,20 +370,20 @@ class PipelineOrchestrator:
     ) -> CandidatePool:
         """
         Get the candidate pool.
-
-        Currently uses demo fixtures. When Person A delivers the
-        retrieval routes, this will call their API instead.
+        Prefers live Qloo retrieval for custom families; uses rich fixtures for demo families.
         """
-        # Try demo family fixtures first
-        demo_pool = get_demo_pool(family_id)
+        # If it is a known demo family, use demo fixtures
+        is_demo_id = any(k in family_id for k in ["demo-sharma", "demo-tanaka-rodriguez", "demo-williams"])
+        demo_pool = get_demo_pool(family_id) if is_demo_id else None
+
+        if not demo_pool and not is_demo_id:
+            # 1. Try Live Qloo API
+            live_pool = await self._retrieve_live_qloo_pool(members, constraints, category, family_id)
+            if live_pool and live_pool.candidates:
+                return live_pool
+
+        # Fallback to demo family fixtures if live retrieval returned empty or failed
         if not demo_pool:
-            # Check if family_id contains demo key
-            for k in ["demo-sharma", "demo-tanaka-rodriguez", "demo-williams"]:
-                if k in family_id or family_id in k or k.replace("demo-", "") in family_id:
-                    demo_pool = get_demo_pool(k)
-                    break
-        if not demo_pool:
-            # Check by member nicknames
             nicknames_lower = {m.nickname.lower() for m in members}
             if {"nani", "priya", "arjun"}.intersection(nicknames_lower):
                 demo_pool = get_demo_pool("demo-sharma")
