@@ -10,6 +10,7 @@
 
 import { useState } from "react";
 import { useFamilyState } from "@/lib/store";
+import { resolvePreferences } from "@/lib/api";
 import { GENERATION_META } from "@/lib/types";
 import type { FamilyMember, Preference, CategoryType } from "@/lib/types";
 
@@ -18,6 +19,8 @@ export default function PreferencesScreen() {
   const [activeMember, setActiveMember] = useState(0);
   const [likeInput, setLikeInput] = useState("");
   const [dislikeInput, setDislikeInput] = useState("");
+  const [isResolving, setIsResolving] = useState(false);
+  const [resolutionError, setResolutionError] = useState<string | null>(null);
 
   const member = state.members[activeMember] || state.members[0];
   if (!member) {
@@ -101,6 +104,43 @@ export default function PreferencesScreen() {
   const totalLikes = state.members.reduce((acc, m) => acc + m.liked_items.length, 0);
   const totalDislikes = state.members.reduce((acc, m) => acc + m.disliked_items.length, 0);
 
+  const resolveAndContinue = async () => {
+    setIsResolving(true); setResolutionError(null);
+    try {
+      const profile = await resolvePreferences({
+        category: state.category,
+        members: state.members.map((m) => ({ ...m, liked_items: m.liked_items, disliked_items: m.disliked_items })),
+      });
+      dispatch({ type: "SET_RESOLUTION", profile });
+    } catch {
+      setResolutionError("We couldn't resolve preferences right now. Please try again; no weak matches will be used.");
+    } finally { setIsResolving(false); }
+  };
+
+  const resolutions = state.resolutionProfile?.members.flatMap((m) => [
+    ...m.resolved_likes.map((item) => ({ ...item, member: m.nickname })),
+    ...m.resolved_dislikes.map((item) => ({ ...item, member: m.nickname })),
+  ]) || [];
+
+  const updateDecision = (memberId: string, originalText: string, decision: "confirm" | "remove", replacement?: { qloo_id: string; name: string }) => {
+    if (!state.resolutionProfile) return;
+    const update = (item: { original_text: string; qloo_id: string; name: string; user_confirmed: boolean }) => item.original_text !== originalText ? item : {
+      ...item,
+      qloo_id: replacement?.qloo_id || item.qloo_id,
+      name: replacement?.name || item.name,
+      user_confirmed: decision === "confirm",
+    };
+    dispatch({ type: "SET_RESOLUTION", profile: {
+      ...state.resolutionProfile,
+      members: state.resolutionProfile.members.map((m) => m.member_id !== memberId ? m : {
+        ...m,
+        resolved_likes: m.resolved_likes.map(update),
+        resolved_dislikes: m.resolved_dislikes.map(update),
+        unresolved: decision === "remove" ? [...m.unresolved, originalText] : m.unresolved,
+      }),
+    }});
+  };
+
   return (
     <div className="flex-1 flex flex-col px-4 sm:px-6 lg:px-8 py-8 md:py-12 max-w-[1440px] mx-auto w-full relative z-10">
       {/* ── Page Header ── */}
@@ -128,6 +168,26 @@ export default function PreferencesScreen() {
           </div>
         </div>
       </div>
+
+      {state.resolutionProfile && (
+        <div className="card mt-6 p-5">
+          <h3 className="font-bold text-text-primary mb-3">Confirm taste matches</h3>
+          <div className="flex flex-wrap gap-2">
+            {resolutions.map((item, index) => (
+              <span key={`${item.original_text}-${index}`} className={`px-3 py-2 rounded-lg text-sm border ${item.needs_confirmation ? "border-amber-warm/40 bg-amber-warm-light" : "border-sage/30 bg-sage-light"}`}>
+                {item.needs_confirmation ? "?" : "✓"} {item.member}: {item.original_text} → {item.name}
+                {item.needs_confirmation && <span className="ml-2 inline-flex gap-1">
+                  <button type="button" onClick={() => updateDecision(item.member_id, item.original_text, "confirm")} className="underline font-semibold">Confirm</button>
+                  {item.alternatives?.[0] && <button type="button" onClick={() => updateDecision(item.member_id, item.original_text, "confirm", item.alternatives[0])} className="underline">Replace</button>}
+                  <button type="button" onClick={() => updateDecision(item.member_id, item.original_text, "remove")} className="underline">Remove</button>
+                </span>}
+              </span>
+            ))}
+            {state.resolutionProfile.members.flatMap((m) => m.unresolved.map((text) => <span key={`${m.member_id}-${text}`} className="px-3 py-2 rounded-lg text-sm border border-terracotta/30 bg-terracotta-light">! We couldn’t confidently match ‘{text}’; it won’t be used as a Qloo signal.</span>))}
+          </div>
+        </div>
+      )}
+      {resolutionError && <p className="mt-4 text-sm text-terracotta">{resolutionError}</p>}
 
       {/* ── Two-Column Grid ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
@@ -423,11 +483,11 @@ export default function PreferencesScreen() {
         </button>
 
         <button
-          onClick={nextStep}
+          onClick={state.resolutionProfile ? nextStep : resolveAndContinue}
           disabled={!allMembersHavePrefs}
           className="btn btn--primary text-sm px-8 py-3.5 rounded-lg shadow-sm flex items-center gap-2 cursor-pointer disabled:opacity-50 font-bold"
         >
-          <span>Continue to constraints</span>
+          <span>{isResolving ? "Resolving preferences…" : state.resolutionProfile ? "Continue to constraints" : "Resolve preferences"}</span>
           <span className="text-lg">→</span>
         </button>
       </div>

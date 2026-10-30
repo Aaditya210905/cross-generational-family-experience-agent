@@ -13,6 +13,7 @@ import type {
   CategoryType,
   ConstraintConfig,
   GenerationLabel,
+  ResolvedProfile,
 } from "./types";
 
 // ── State ────────────────────────────────────────────────────────────────────
@@ -24,6 +25,7 @@ interface FamilyState {
   currentStep: number; // 0=welcome, 1=members, 2=preferences, 3=constraints, 4=results
   isLoading: boolean;
   error: string | null;
+  resolutionProfile: ResolvedProfile | null;
 }
 
 const initialConstraints: ConstraintConfig = {
@@ -40,6 +42,7 @@ const initialState: FamilyState = {
   currentStep: 0,
   isLoading: false,
   error: null,
+  resolutionProfile: null,
 };
 
 // ── Actions ──────────────────────────────────────────────────────────────────
@@ -54,6 +57,7 @@ type Action =
   | { type: "SET_MEMBERS"; members: FamilyMember[] }
   | { type: "SET_LOADING"; loading: boolean }
   | { type: "SET_ERROR"; error: string | null }
+  | { type: "SET_RESOLUTION"; profile: ResolvedProfile | null }
   | { type: "RESET" }
   | { type: "LOAD_DEMO"; members: FamilyMember[]; category: CategoryType };
 
@@ -85,6 +89,8 @@ function reducer(state: FamilyState, action: Action): FamilyState {
       return { ...state, isLoading: action.loading };
     case "SET_ERROR":
       return { ...state, error: action.error };
+    case "SET_RESOLUTION":
+      return { ...state, resolutionProfile: action.profile };
     case "RESET":
       return initialState;
     case "LOAD_DEMO":

@@ -27,6 +27,7 @@ class GenerationLabel(str, Enum):
 class Category(str, Enum):
     MOVIES = "movies"
     RESTAURANTS = "restaurants"
+    ACTIVITIES = "activities"
 
 
 class ConstraintType(str, Enum):
@@ -62,9 +63,14 @@ class ConfidenceLevel(str, Enum):
     EXACT = "exact"
     NEAR = "near"
     AMBIGUOUS = "ambiguous"
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+    UNRESOLVED = "unresolved"
 
 
 class BudgetBand(str, Enum):
+    FREE = "free"
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -127,8 +133,8 @@ def taste_texts(items: Optional[List[Any]]) -> List[str]:
 class FamilyMember(BaseModel):
     """A single family member with their taste profile."""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    nickname: str
-    generation: GenerationLabel
+    nickname: str = "Family Member"
+    generation: GenerationLabel = GenerationLabel.PARENT
     avatar_emoji: str = "👤"
     liked_items: List[TasteItem] = Field(default_factory=list)
     disliked_items: List[TasteItem] = Field(default_factory=list)
@@ -137,6 +143,27 @@ class FamilyMember(BaseModel):
     @classmethod
     def _coerce_taste_fields(cls, value: Any) -> List[TasteItem]:
         return coerce_taste_items(value)
+
+    @field_validator("generation", mode="before")
+    @classmethod
+    def _coerce_generation(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            v = value.strip().lower()
+            if v in ("senior", "elder", "grandma", "grandpa"):
+                return GenerationLabel.GRANDPARENT
+            if v in ("adult", "mom", "dad"):
+                return GenerationLabel.PARENT
+            if v in ("kid", "toddler"):
+                return GenerationLabel.CHILD
+            if v in ("youth", "collegiate"):
+                return GenerationLabel.YOUNG_ADULT
+            if v in ("teenager",):
+                return GenerationLabel.TEEN
+            for label in GenerationLabel:
+                if label.value == v:
+                    return label
+            return GenerationLabel.PARENT
+        return value
 
 
 class Preference(BaseModel):
@@ -156,6 +183,31 @@ class ResolvedEntity(BaseModel):
     image_url: Optional[str] = None
 
 
+class PreferenceResolution(BaseModel):
+    """A user-visible resolution decision.  Weak matches are never signals until confirmed."""
+    original_text: str
+    qloo_id: Optional[str] = None
+    name: Optional[str] = None
+    confidence: ConfidenceLevel = ConfidenceLevel.UNRESOLVED
+    user_confirmed: bool = False
+    alternatives: List[ResolvedEntity] = Field(default_factory=list)
+    unresolved: bool = False
+
+
+class ResolvedMember(BaseModel):
+    member_id: str
+    nickname: str
+    resolved_likes: List[PreferenceResolution] = Field(default_factory=list)
+    resolved_dislikes: List[PreferenceResolution] = Field(default_factory=list)
+    unresolved: List[str] = Field(default_factory=list)
+
+
+class ResolvedProfile(BaseModel):
+    """Canonical result of /api/resolve, used as retrieval input."""
+    members: List[ResolvedMember] = Field(default_factory=list)
+    resolution_stats: Dict[str, int | float] = Field(default_factory=dict)
+
+
 class Constraints(BaseModel):
     """Family-level constraints for filtering recommendations."""
     budget_band: BudgetBand = BudgetBand.ANY
@@ -165,6 +217,76 @@ class Constraints(BaseModel):
     dietary: List[str] = Field(default_factory=list)
     mobility_notes: Optional[str] = None
     category: Category = Category.MOVIES
+
+    @field_validator("budget_band", mode="before")
+    @classmethod
+    def _coerce_budget(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            v = value.strip().lower()
+            if v in ("free", "0", "$0"):
+                return BudgetBand.FREE
+            if v in ("low", "$", "budget"):
+                return BudgetBand.LOW
+            if v in ("medium", "$$", "moderate"):
+                return BudgetBand.MEDIUM
+            if v in ("high", "$$$", "splurge"):
+                return BudgetBand.HIGH
+            for b in BudgetBand:
+                if b.value == v:
+                    return b
+            return BudgetBand.ANY
+        return value
+
+    @field_validator("category", mode="before")
+    @classmethod
+    def _coerce_category(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            v = value.strip().lower()
+            if "movie" in v or "film" in v or "show" in v:
+                return Category.MOVIES
+            if "restaurant" in v or "dining" in v or "food" in v:
+                return Category.RESTAURANTS
+            if "activit" in v or "outing" in v:
+                return Category.ACTIVITIES
+            for c in Category:
+                if c.value == v:
+                    return c
+        return value
+
+    @field_validator("location", mode="before")
+    @classmethod
+    def _coerce_location(cls, value: Any) -> Optional[str]:
+        if isinstance(value, str):
+            v = value.strip()
+            return v if v else None
+        return value
+
+    @field_validator("time_available", mode="before")
+    @classmethod
+    def _coerce_time(cls, value: Any) -> Any:
+        if isinstance(value, (int, float)):
+            if value <= 60:
+                return TimeAvailable.SHORT
+            elif value <= 180:
+                return TimeAvailable.MEDIUM
+            else:
+                return TimeAvailable.LONG
+        if isinstance(value, str):
+            v = value.strip().lower()
+            for t in TimeAvailable:
+                if t.value == v:
+                    return t
+        return TimeAvailable.ANY
+
+    @field_validator("energy_level", mode="before")
+    @classmethod
+    def _coerce_energy(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            v = value.strip().lower()
+            for e in EnergyLevel:
+                if e.value == v:
+                    return e
+        return EnergyLevel.ANY
 
 
 # ─── Candidate Pool (Person A → Person B handoff) ───────────────────────────
@@ -233,6 +355,9 @@ class ScoredCandidate(BaseModel):
     data_source: DataSource = DataSource.LIVE_QLOO
     tags: List[str] = Field(default_factory=list)
     metadata: Dict[str, Any] = Field(default_factory=dict)
+    average_score: float = 0.0
+    bridge_bonus: float = 0.0
+    soft_constraint_penalty: float = 0.0
 
 
 class RankedResults(BaseModel):
@@ -243,6 +368,7 @@ class RankedResults(BaseModel):
     total_candidates_considered: int
     total_after_constraints: int
     scoring_params: Dict[str, float] = Field(default_factory=dict)
+    run_metadata: Dict[str, Any] = Field(default_factory=dict)
     version: str = "1.0"
 
 
@@ -288,14 +414,38 @@ class ErrorResponse(BaseModel):
     status_code: int = 500
 
 
-# ─── Request Models ─────────────────────────────────────────────────────────
-
 class FamilyProfileRequest(BaseModel):
     """What the UI sends to kick off the pipeline."""
     family_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    members: List[FamilyMember]
+    members: List[FamilyMember] = Field(default_factory=list)
     constraints: Constraints = Field(default_factory=Constraints)
     category: Category = Category.MOVIES
+    # Keys are "member_id:original_preference". Only explicit confirmations
+    # are allowed to override resolver matches in retrieval.
+    confirmed_entity_ids: Dict[str, str] = Field(default_factory=dict)
+
+    @field_validator("category", mode="before")
+    @classmethod
+    def _coerce_category(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            v = value.strip().lower()
+            if "movie" in v or "film" in v or "show" in v:
+                return Category.MOVIES
+            if "restaurant" in v or "dining" in v or "food" in v:
+                return Category.RESTAURANTS
+            if "activit" in v or "outing" in v:
+                return Category.ACTIVITIES
+            for c in Category:
+                if c.value == v:
+                    return c
+        return value
+
+    @field_validator("constraints", mode="before")
+    @classmethod
+    def _coerce_constraints(cls, value: Any) -> Any:
+        if value is None:
+            return Constraints()
+        return value
 
 
 class RecommendRequest(BaseModel):

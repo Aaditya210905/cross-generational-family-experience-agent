@@ -54,6 +54,11 @@ export default function ResultCard({
     confidence_note,
     data_source,
     metadata = {},
+    average_score = 0,
+    weakest_member_nickname,
+    weakest_score = 0,
+    bridge_bonus = 0,
+    soft_constraint_penalty = 0,
   } = result;
 
   const source = DATA_SOURCE_LABELS[data_source] || DATA_SOURCE_LABELS.fallback;
@@ -113,9 +118,9 @@ export default function ResultCard({
               {metadata.runtime_min && (
                 <span className="badge badge--source text-xs">⏱️ {metadata.runtime_min} mins</span>
               )}
-              {metadata.price_level && (
-                <span className="badge badge--source text-xs">
-                  {'💲'.repeat(metadata.price_level)}
+              {metadata.price_level !== undefined && metadata.price_level !== null && (
+                <span className="badge badge--source text-xs font-semibold">
+                  {metadata.price_level === 0 ? '🆓 Free ($0)' : '💲'.repeat(Math.max(1, Math.min(metadata.price_level, 4)))}
                 </span>
               )}
               {bridge_themes.map((theme) => (
@@ -140,6 +145,17 @@ export default function ResultCard({
         )}
 
         {/* Per-person match bars */}
+        <div className="mt-6 p-4 rounded-xl border border-border-base bg-cream-50">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-text-muted mb-2">Why this ranked highly</div>
+          <div className="text-sm text-text-secondary space-y-1">
+            <div>Fair family match: <strong>{Math.round(group_score * 100)}%</strong> (average match {Math.round(average_score * 100)}%; 70% average + 30% lowest match)</div>
+            <div>Lowest individual match: <strong>{weakest_member_nickname || "Family member"} {Math.round(weakest_score * 100)}%</strong></div>
+            <div>Shared themes: {bridge_themes.length ? bridge_themes.map((theme) => theme.replace(/_/g, " ")).join(", ") : "none verified"}{bridge_bonus ? ` (+${Math.round(bridge_bonus * 100)} bonus)` : ""}</div>
+            <div>Score confidence: {per_person_details.filter((p) => p.reason?.includes("estimated")).length} estimated member score(s)</div>
+            {soft_constraint_penalty > 0 && <div>Constraint note: soft constraints reduced this score by {Math.round(soft_constraint_penalty * 100)} points.</div>}
+          </div>
+        </div>
+
         <div className="mt-8">
           <div className="flex items-center justify-between mb-3">
             <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">

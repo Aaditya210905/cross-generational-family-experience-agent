@@ -46,7 +46,7 @@ export default function WelcomeScreen() {
           setDemos([
             {
               family_id: "demo-sharma",
-              label: "The Sharma Family",
+              label: "The Sharma Family — Three Generations",
               description: "Three generations — Bollywood classics meet anime and modern Marvel.",
               member_count: 3,
               category: "movies",
@@ -58,7 +58,7 @@ export default function WelcomeScreen() {
             },
             {
               family_id: "demo-tanaka-rodriguez",
-              label: "The Tanaka-Rodriguez Family",
+              label: "The Tanaka-Rodriguez Family — Cross-Cultural",
               description: "Cross-cultural household — high-flavor culinary crossover.",
               member_count: 3,
               category: "restaurants",
@@ -70,10 +70,10 @@ export default function WelcomeScreen() {
             },
             {
               family_id: "demo-williams",
-              label: "The Williams Family",
-              description: "Adventure seekers — sci-fi, Disney, and mobility-friendly outings.",
+              label: "The Williams Family — Activities & Outings",
+              description: "Four members across three generations — accessible science museums, gardens & lakefront outings.",
               member_count: 4,
-              category: "movies",
+              category: "activities",
               members: [
                 { nickname: "Grandpa Bob", generation: "grandparent", avatar_emoji: "👴🏼" },
                 { nickname: "Dad Mike", generation: "parent", avatar_emoji: "👨🏼" },
@@ -89,7 +89,7 @@ export default function WelcomeScreen() {
         setDemos([
           {
             family_id: "demo-sharma",
-            label: "The Sharma Family",
+            label: "The Sharma Family — Three Generations",
             description: "Three generations — Bollywood classics meet anime and modern Marvel.",
             member_count: 3,
             category: "movies",
@@ -101,7 +101,7 @@ export default function WelcomeScreen() {
           },
           {
             family_id: "demo-tanaka-rodriguez",
-            label: "The Tanaka-Rodriguez Family",
+            label: "The Tanaka-Rodriguez Family — Cross-Cultural",
             description: "Cross-cultural household — high-flavor culinary crossover.",
             member_count: 3,
             category: "restaurants",
@@ -113,10 +113,10 @@ export default function WelcomeScreen() {
           },
           {
             family_id: "demo-williams",
-            label: "The Williams Family",
-            description: "Adventure seekers — sci-fi, Disney, and mobility-friendly outings.",
+            label: "The Williams Family — Activities & Outings",
+            description: "Four members across three generations — accessible science museums, gardens & lakefront outings.",
             member_count: 4,
-            category: "movies",
+            category: "activities",
             members: [
               { nickname: "Grandpa Bob", generation: "grandparent", avatar_emoji: "👴🏼" },
               { nickname: "Dad Mike", generation: "parent", avatar_emoji: "👨🏼" },
@@ -198,6 +198,101 @@ export default function WelcomeScreen() {
                 { text: "Avengers Endgame", category: "movies", is_dislike: false },
               ],
               disliked_items: [{ text: "slow documentaries", category: "movies", is_dislike: true }],
+            },
+          ],
+        });
+      } else if (familyId === "demo-tanaka-rodriguez") {
+        dispatch({
+          type: "LOAD_DEMO",
+          category: "restaurants",
+          members: [
+            {
+              id: "tanrod-carlos",
+              nickname: "Carlos",
+              generation: "parent",
+              avatar_emoji: "👨🏽",
+              liked_items: [
+                { text: "Mexican restaurant", category: "restaurants", is_dislike: false },
+                { text: "taqueria", category: "restaurants", is_dislike: false },
+                { text: "steakhouse", category: "restaurants", is_dislike: false },
+              ],
+              disliked_items: [{ text: "fast food chains", category: "restaurants", is_dislike: true }],
+            },
+            {
+              id: "tanrod-yuki",
+              nickname: "Yuki",
+              generation: "parent",
+              avatar_emoji: "👩🏻",
+              liked_items: [
+                { text: "sushi bar", category: "restaurants", is_dislike: false },
+                { text: "izakaya", category: "restaurants", is_dislike: false },
+                { text: "tea house", category: "restaurants", is_dislike: false },
+              ],
+              disliked_items: [{ text: "greasy food", category: "restaurants", is_dislike: true }],
+            },
+            {
+              id: "tanrod-sofia",
+              nickname: "Sofia",
+              generation: "teen",
+              avatar_emoji: "👧🏻",
+              liked_items: [
+                { text: "Korean BBQ", category: "restaurants", is_dislike: false },
+                { text: "fusion restaurant", category: "restaurants", is_dislike: false },
+                { text: "dessert cafe", category: "restaurants", is_dislike: false },
+              ],
+              disliked_items: [{ text: "bland buffets", category: "restaurants", is_dislike: true }],
+            },
+          ],
+        });
+      } else if (familyId === "demo-williams") {
+        dispatch({
+          type: "LOAD_DEMO",
+          category: "activities",
+          members: [
+            {
+              id: "williams-bob",
+              nickname: "Grandpa Bob",
+              generation: "grandparent",
+              avatar_emoji: "👴🏼",
+              liked_items: [
+                { text: "Field Museum of Natural History", category: "activities", is_dislike: false },
+                { text: "Chicago Riverwalk", category: "activities", is_dislike: false },
+                { text: "Art Institute of Chicago", category: "activities", is_dislike: false },
+              ],
+              disliked_items: [{ text: "rollercoasters", category: "activities", is_dislike: true }],
+            },
+            {
+              id: "williams-mike",
+              nickname: "Dad Mike",
+              generation: "parent",
+              avatar_emoji: "👨🏼",
+              liked_items: [
+                { text: "Museum of Science and Industry", category: "activities", is_dislike: false },
+                { text: "Adler Planetarium", category: "activities", is_dislike: false },
+              ],
+              disliked_items: [{ text: "shopping malls", category: "activities", is_dislike: true }],
+            },
+            {
+              id: "williams-zoe",
+              nickname: "Zoe",
+              generation: "teen",
+              avatar_emoji: "👧🏼",
+              liked_items: [
+                { text: "Lincoln Park Conservatory", category: "activities", is_dislike: false },
+                { text: "Navy Pier Ferris Wheel", category: "activities", is_dislike: false },
+              ],
+              disliked_items: [{ text: "dull lectures", category: "activities", is_dislike: true }],
+            },
+            {
+              id: "williams-sam",
+              nickname: "Sam",
+              generation: "child",
+              avatar_emoji: "👦🏼",
+              liked_items: [
+                { text: "Shedd Aquarium", category: "activities", is_dislike: false },
+                { text: "Chicago Children's Museum", category: "activities", is_dislike: false },
+              ],
+              disliked_items: [{ text: "long walking tours", category: "activities", is_dislike: true }],
             },
           ],
         });
@@ -293,7 +388,7 @@ export default function WelcomeScreen() {
                     {demo.member_count} members
                   </span>
                   <span className="text-[10px] font-bold uppercase text-text-muted">
-                    {demo.category === "movies" ? "Movies & Shows" : demo.category === "restaurants" ? "Dining" : "Outings"}
+                    {demo.category === "movies" ? "Movies & Shows" : demo.category === "restaurants" ? "Restaurants & Food" : "Activities & Outings"}
                   </span>
                 </div>
 

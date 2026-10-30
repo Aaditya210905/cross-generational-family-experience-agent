@@ -65,6 +65,7 @@ async def recommend(request: RecommendRequest) -> RankedResults:
             category=profile.category,
             family_id=profile.family_id,
             adjustment=request.adjustment,
+            confirmed_entity_ids=profile.confirmed_entity_ids,
         )
 
         return results

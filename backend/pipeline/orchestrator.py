@@ -123,6 +123,7 @@ class PipelineOrchestrator:
         category: Category,
         family_id: str,
         adjustment: Optional[AdjustmentSet] = None,
+        confirmed_entity_ids: Optional[Dict[str, str]] = None,
     ) -> RankedResults:
         """
         Run the full recommendation pipeline.
@@ -136,7 +137,7 @@ class PipelineOrchestrator:
         6. Generate explanations (Person B)
         """
         run_key = self._run_fingerprint(
-            family_id, members, constraints, category, adjustment
+            family_id, members, constraints, category, adjustment, confirmed_entity_ids
         )
         async with self._dedupe_lock:
             existing = self._in_flight.get(run_key)
@@ -153,7 +154,7 @@ class PipelineOrchestrator:
 
         try:
             result = await self._run_impl(
-                members, constraints, category, family_id, adjustment
+            members, constraints, category, family_id, adjustment, confirmed_entity_ids
             )
             if not future.done():
                 future.set_result(result)
@@ -172,6 +173,7 @@ class PipelineOrchestrator:
         category: Category,
         family_id: str,
         adjustment: Optional[AdjustmentSet] = None,
+        confirmed_entity_ids: Optional[Dict[str, str]] = None,
     ) -> RankedResults:
         start_time = time.time()
 
@@ -188,16 +190,6 @@ class PipelineOrchestrator:
             progress=0.05,
         )
 
-        # Simulate resolution time
-        await asyncio.sleep(0.3)
-
-        total_prefs = sum(len(m.liked_items) for m in members)
-        await self._emit_progress(
-            family_id, "resolve", "completed",
-            f"Resolved {total_prefs} preferences across {len(members)} members",
-            progress=0.15,
-        )
-
         # ── Step 2: Retrieve candidates (Person A) ──────────────────────
         await self._emit_progress(
             family_id, "retrieve", "started",
@@ -205,8 +197,16 @@ class PipelineOrchestrator:
             progress=0.20,
         )
 
-        pool = await self._get_candidate_pool(
-            members, constraints, category, family_id, adjustment=adjustment
+        pool, resolution_stats, source = await self._get_candidate_pool(
+            members, constraints, category, family_id, adjustment=adjustment,
+            confirmed_entity_ids=confirmed_entity_ids
+        )
+
+        await self._emit_progress(
+            family_id, "resolve", "completed",
+            f"Resolved {resolution_stats.get('resolved', 0)} preferences; "
+            f"{resolution_stats.get('unresolved', 0)} unresolved",
+            progress=0.15, details=resolution_stats,
         )
 
         await self._emit_progress(
@@ -330,6 +330,17 @@ class PipelineOrchestrator:
             total_candidates_considered=len(pool.candidates),
             total_after_constraints=len(passed),
             scoring_params=scorer.get_scoring_params(),
+            run_metadata={
+                "source": source,
+                "resolved_preferences": resolution_stats.get("resolved", 0),
+                "unresolved_preferences": resolution_stats.get("unresolved", 0),
+                "candidate_count": len(pool.candidates),
+                "estimated_scores": sum(
+                    1 for candidate in pool.candidates
+                    for score in candidate.per_person_scores.values()
+                    if score.source == ScoreSource.ESTIMATED
+                ),
+            },
         )
 
         await self._emit_progress(
@@ -353,11 +364,13 @@ class PipelineOrchestrator:
         category: Category,
         family_id: str,
         adjustment: Optional[AdjustmentSet] = None,
-    ) -> Optional[CandidatePool]:
+        confirmed_entity_ids: Optional[Dict[str, str]] = None,
+    ) -> tuple[Optional[CandidatePool], Dict[str, Any]]:
         """Call Person A's real Qloo EntityResolver and RetrievalEngine live."""
         try:
             from backend.resolution.resolver import EntityResolver
             from backend.retrieval.engine import RetrievalEngine
+            from backend.adapters.qloo_to_contracts import to_contract_pool
             from backend.models.family import FamilyMember as P_Member, Preference as P_Pref, CategoryType as P_Cat
 
             rec_cat = _match_category_type(
@@ -388,6 +401,13 @@ class PipelineOrchestrator:
                 p_members,
                 rec_cat or next(iter(P_Cat)),
             )
+            # A confirmation is an explicit user decision, never a silent weak match.
+            for resolved_member in resolved_profile.members:
+                for entity in resolved_member.resolved_likes + resolved_member.resolved_dislikes:
+                    key = f"{resolved_member.member_id}:{entity.original_text}"
+                    if confirmed_entity_ids and key in confirmed_entity_ids:
+                        entity.qloo_id = confirmed_entity_ids[key]
+                        entity.user_confirmed = True
 
             retriever = RetrievalEngine()
             live_pool = await retriever.build_candidate_pool(
@@ -398,44 +418,12 @@ class PipelineOrchestrator:
             )
 
             if live_pool and live_pool.candidates:
-                converted_candidates = []
-                for c in live_pool.candidates:
-                    per_person = {}
-                    for ps in c.per_person_scores:
-                        m_obj = next((m for m in members if m.id == ps.member_id), None)
-                        per_person[ps.member_id] = PersonScore(
-                            member_id=ps.member_id,
-                            nickname=m_obj.nickname if m_obj else ps.member_id,
-                            score=ps.score,
-                            source=ScoreSource.REAL if ps.source.value == "direct" else ScoreSource.ESTIMATED,
-                        )
-
-                    converted_candidates.append(Candidate(
-                        entity=ResolvedEntity(
-                            qloo_id=c.entity_id,
-                            name=c.name,
-                            type=c.entity_type,
-                            confidence=ConfidenceLevel.EXACT,
-                            tags=c.tags,
-                        ),
-                        source_members=c.source_members,
-                        per_person_scores=per_person,
-                        tags=c.tags,
-                        metadata=c.properties,
-                        data_source=DataSource.LIVE_QLOO,
-                    ))
-
-                logger.info(f"Retrieved {len(converted_candidates)} candidates LIVE from Qloo!")
-                return CandidatePool(
-                    candidates=converted_candidates,
-                    members=members,
-                    family_id=family_id,
-                    category=category,
-                    constraints=constraints,
-                )
+                converted = to_contract_pool(live_pool, members, constraints, family_id, category)
+                logger.info("Retrieved %s candidates LIVE from Qloo", len(converted.candidates))
+                return converted, resolved_profile.resolution_stats
         except Exception as e:
-            logger.warning(f"Live Qloo retrieval failed: {e}, falling back to fixture")
-            return None
+            logger.warning("Live Qloo retrieval failed: %s", e)
+        return None, {"resolved": 0, "unresolved": sum(len(m.liked_items) + len(m.disliked_items) for m in members)}
 
     async def _get_candidate_pool(
         self,
@@ -444,28 +432,23 @@ class PipelineOrchestrator:
         category: Category,
         family_id: str,
         adjustment: Optional[AdjustmentSet] = None,
-    ) -> CandidatePool:
+        confirmed_entity_ids: Optional[Dict[str, str]] = None,
+    ) -> tuple[CandidatePool, Dict[str, Any], str]:
         """
         Get the candidate pool.
-        Prefers live Qloo retrieval for custom families; uses rich fixtures for demo families.
+        Fixtures are available only when the caller explicitly chose a demo family.
         """
         demo_pool = get_demo_pool(family_id)
 
         if not demo_pool:
-            live_pool = await self._retrieve_live_qloo_pool(
-                members, constraints, category, family_id, adjustment=adjustment
+            live_pool, resolution_stats = await self._retrieve_live_qloo_pool(
+                members, constraints, category, family_id, adjustment=adjustment,
+                confirmed_entity_ids=confirmed_entity_ids
             )
             if live_pool and live_pool.candidates:
-                return live_pool
-
-            # Fallback to standard demo pools by category if live retrieval yielded nothing
-            cat_str = str(category.value if hasattr(category, "value") else category).lower()
-            if "restaurant" in cat_str:
-                demo_pool = get_demo_pool("demo-tanaka-rodriguez")
-            elif "activit" in cat_str:
-                demo_pool = get_demo_pool("demo-williams")
-            else:
-                demo_pool = get_demo_pool("demo-sharma")
+                return live_pool, resolution_stats, "live_qloo"
+            return CandidatePool(candidates=[], members=members, family_id=family_id,
+                                 category=category, constraints=constraints), resolution_stats, "live_qloo_unavailable"
 
         if demo_pool:
             # Update with current constraints, members, and category
@@ -495,7 +478,7 @@ class PipelineOrchestrator:
                 )
                 await asyncio.sleep(0.1)
 
-            return demo_pool
+            return demo_pool, {"resolved": 0, "unresolved": 0}, "demo_fixture"
 
         return CandidatePool(
             candidates=[],
@@ -503,7 +486,7 @@ class PipelineOrchestrator:
             family_id=family_id,
             category=category,
             constraints=constraints,
-        )
+        ), {"resolved": 0, "unresolved": 0}, "live_qloo_unavailable"
 
     # ─── Feedback Processing ─────────────────────────────────────────────
 
@@ -523,6 +506,7 @@ class PipelineOrchestrator:
         constraints: Constraints,
         category: Category,
         adjustment: Optional[AdjustmentSet],
+        confirmed_entity_ids: Optional[Dict[str, str]] = None,
     ) -> str:
         payload = {
             "family_id": family_id,
@@ -530,6 +514,7 @@ class PipelineOrchestrator:
             "members": [m.model_dump() for m in members],
             "constraints": constraints.model_dump() if constraints else {},
             "adjustment": adjustment.model_dump() if adjustment else None,
+            "confirmed_entity_ids": confirmed_entity_ids or {},
         }
         raw = json.dumps(payload, sort_keys=True, default=str)
         return hashlib.sha256(raw.encode()).hexdigest()

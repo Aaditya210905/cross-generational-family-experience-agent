@@ -52,9 +52,11 @@ ENERGY_LEVEL_TAGS: Dict[str, set] = {
 }
 
 BUDGET_LEVEL_MAP: Dict[str, set] = {
-    "low": {1},       # price_level 1
-    "medium": {1, 2, 3},
-    "high": {1, 2, 3, 4},
+    "free": {0},
+    "low": {0, 1},
+    "medium": {0, 1, 2},
+    "high": {0, 1, 2, 3, 4},
+    "any": {0, 1, 2, 3, 4},
 }
 
 TIME_LIMITS: Dict[str, int] = {
@@ -136,6 +138,7 @@ class ConstraintEngine:
             else:
                 # Apply soft penalty to group score
                 if score_penalty > 0:
+                    candidate.soft_constraint_penalty = round(score_penalty, 4)
                     candidate.group_score = max(0.0, round(
                         candidate.group_score - score_penalty, 4
                     ))
@@ -150,40 +153,13 @@ class ConstraintEngine:
         candidates: List[ScoredCandidate],
         constraints: Constraints,
     ) -> Tuple[List[ScoredCandidate], List[ScoredCandidate]]:
+        """Constraints are factual, deterministic checks; unknown facts stay unknown.
+
+        LLM output must never turn an unverified accessibility/dietary claim into a
+        pass or fail, so this async compatibility method deliberately delegates to
+        the deterministic engine only.
         """
-        Apply all constraints deterministically, then use LLM to resolve
-        any UNVERIFIED flags on top candidates.
-        """
-        passed, filtered = self.apply_all(candidates, constraints)
-
-        from backend.llm import is_llm_available, evaluate_constraint_with_llm
-
-        if is_llm_available():
-            # Only check Mobility with LLM if family explicitly noted mobility requirements
-            if constraints.mobility_notes:
-                for c in passed[:4]:
-                    for i, cr in enumerate(c.constraint_results):
-                        if cr.status == ConstraintStatus.UNVERIFIED and cr.constraint_name == "Mobility":
-                            try:
-                                val = constraints.mobility_notes
-                                eval_res = await evaluate_constraint_with_llm(
-                                    name=c.entity.name,
-                                    entity_type=c.entity.type,
-                                    tags=c.tags,
-                                    constraint_name=cr.constraint_name,
-                                    constraint_value=val or "standard",
-                                )
-                                if eval_res and eval_res.get("status") in ("pass", "warning", "fail"):
-                                    c.constraint_results[i] = ConstraintResult(
-                                        constraint_name=cr.constraint_name,
-                                        constraint_type=cr.constraint_type,
-                                        status=ConstraintStatus(eval_res["status"]),
-                                        message=eval_res["reason"],
-                                    )
-                            except Exception as e:
-                                logger.debug(f"LLM constraint check skipped: {e}")
-
-        return passed, filtered
+        return self.apply_all(candidates, constraints)
 
     def _evaluate(
         self,
@@ -262,9 +238,16 @@ class ConstraintEngine:
         # Movies category allows: movie, film, show, series, urn:entity:movie
         movie_types = {"movie", "film", "show", "series", "documentary", "urn:entity:movie"}
         restaurant_types = {"restaurant", "cafe", "bar", "food", "cuisine", "eatery", "urn:entity:restaurant", "urn:entity:place"}
+        activity_types = {
+            "activity", "outing", "attraction", "museum", "park", "tour",
+            "entertainment", "zoo", "aquarium", "bowling", "arcade",
+            "experience", "sightseeing", "nature", "theater", "theatre",
+            "urn:entity:attraction", "urn:entity:activity",
+        }
 
         is_movie = any(t in entity_type for t in ["movie", "film", "show", "series", "documentary"])
         is_restaurant = any(t in entity_type for t in ["restaurant", "cafe", "food", "cuisine", "place"])
+        is_activity = any(t in entity_type for t in ["activity", "attraction", "museum", "park", "tour", "experience", "zoo", "aquarium", "arcade", "nature", "outing"]) or entity_type in activity_types
 
         if category == "movies" and (is_movie or entity_type in movie_types):
             return ConstraintResult(
@@ -273,28 +256,36 @@ class ConstraintEngine:
                 status=ConstraintStatus.PASS,
                 message=f"Matches category: {category}",
             )
-        elif category == "restaurants" and entity_type in restaurant_types:
+        elif category == "restaurants" and (is_restaurant or entity_type in restaurant_types):
             return ConstraintResult(
                 constraint_name="Category",
                 constraint_type=ConstraintType.HARD,
                 status=ConstraintStatus.PASS,
                 message=f"Matches category: {category}",
             )
-        elif entity_type not in movie_types and entity_type not in restaurant_types:
+        elif category in ("activities", "outings") and (is_activity or (not is_movie and not is_restaurant)):
+            return ConstraintResult(
+                constraint_name="Category",
+                constraint_type=ConstraintType.HARD,
+                status=ConstraintStatus.PASS,
+                message=f"Matches category: {category}",
+            )
+        elif (category == "movies" and (is_restaurant or is_activity)) or \
+             (category == "restaurants" and (is_movie or is_activity)) or \
+             (category in ("activities", "outings") and (is_movie or is_restaurant)):
+            return ConstraintResult(
+                constraint_name="Category",
+                constraint_type=ConstraintType.HARD,
+                status=ConstraintStatus.FAIL,
+                message=f"Wrong category: '{entity_type}' doesn't match '{category}'",
+            )
+        elif entity_type not in movie_types and entity_type not in restaurant_types and entity_type not in activity_types:
             # Unknown type — pass but note
             return ConstraintResult(
                 constraint_name="Category",
                 constraint_type=ConstraintType.HARD,
                 status=ConstraintStatus.UNVERIFIED,
                 message=f"Unknown entity type '{entity_type}', cannot verify category",
-            )
-        elif (category == "movies" and entity_type in restaurant_types) or \
-             (category == "restaurants" and entity_type in movie_types):
-            return ConstraintResult(
-                constraint_name="Category",
-                constraint_type=ConstraintType.HARD,
-                status=ConstraintStatus.FAIL,
-                message=f"Wrong category: '{entity_type}' doesn't match '{category}'",
             )
         return None
 
@@ -399,6 +390,40 @@ class ConstraintEngine:
 
     # ─── Soft Constraint Checks ──────────────────────────────────────────
 
+    @staticmethod
+    def _extract_price_level(candidate: ScoredCandidate) -> Optional[int]:
+        """Extract and normalize price_level (0-4) from candidate metadata and tags."""
+        # 1. Direct price_level int/string
+        raw_level = candidate.metadata.get("price_level")
+        if raw_level is not None:
+            try:
+                val = int(raw_level)
+                if 0 <= val <= 4:
+                    return val
+            except (ValueError, TypeError):
+                pass
+
+        # 2. String price representations (e.g. "free", "$", "$$", "$$$", "$$$$")
+        raw_price = str(candidate.metadata.get("price") or "").strip().lower()
+        if raw_price in ("free", "0", "$0", "zero", "none"):
+            return 0
+        elif raw_price in ("$", "1", "low", "inexpensive"):
+            return 1
+        elif raw_price in ("$$", "2", "medium", "moderate"):
+            return 2
+        elif raw_price in ("$$$", "3", "high", "expensive"):
+            return 3
+        elif raw_price in ("$$$$", "4", "very high", "splurge", "luxury"):
+            return 4
+
+        # 3. Check tags for free indicators
+        tags = set(t.lower().replace("-", "_").replace(" ", "_") for t in candidate.tags)
+        free_tags = {"free", "free_admission", "free_entry", "public_park", "no_fee", "zero_cost"}
+        if tags & free_tags:
+            return 0
+
+        return None
+
     def _check_budget(
         self, candidate: ScoredCandidate, constraints: Constraints,
     ) -> Optional[ConstraintResult]:
@@ -406,7 +431,7 @@ class ConstraintEngine:
         if constraints.budget_band.value == "any":
             return None
 
-        price_level = candidate.metadata.get("price_level")
+        price_level = self._extract_price_level(candidate)
         if price_level is None:
             return ConstraintResult(
                 constraint_name="Budget",
@@ -415,21 +440,23 @@ class ConstraintEngine:
                 message="No price information available — please check",
             )
 
-        allowed = BUDGET_LEVEL_MAP.get(constraints.budget_band.value, {1, 2, 3, 4})
+        allowed = BUDGET_LEVEL_MAP.get(constraints.budget_band.value, {0, 1, 2, 3, 4})
+        labels = {0: "Free ($0)", 1: "$", 2: "$$", 3: "$$$", 4: "$$$$"}
+        display_label = labels.get(price_level, f"tier {price_level}")
+
         if price_level in allowed:
-            labels = {1: "$", 2: "$$", 3: "$$$", 4: "$$$$"}
             return ConstraintResult(
                 constraint_name="Budget",
                 constraint_type=ConstraintType.SOFT,
                 status=ConstraintStatus.PASS,
-                message=f"Price level: {labels.get(price_level, '?')} — within budget",
+                message=f"Price level: {display_label} — within budget",
             )
         else:
             return ConstraintResult(
                 constraint_name="Budget",
                 constraint_type=ConstraintType.SOFT,
                 status=ConstraintStatus.WARNING,
-                message=f"Price level {price_level} may exceed '{constraints.budget_band.value}' budget",
+                message=f"Price level {display_label} may exceed '{constraints.budget_band.value}' budget",
             )
 
     def _check_energy(
