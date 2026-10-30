@@ -11,24 +11,29 @@ const nextConfig: NextConfig = {
     },
   },
 
-  /* Proxy API calls to the FastAPI backend during development */
+  /* Proxy API calls to the FastAPI backend during development and production */
   async rewrites() {
+    const backendUrl =
+      process.env.BACKEND_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      "http://localhost:8000";
+
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:8000/api/:path*",
+        destination: `${backendUrl}/api/:path*`,
       },
       {
         source: "/health",
-        destination: "http://localhost:8000/health",
+        destination: `${backendUrl}/health`,
       },
       {
         source: "/resolve",
-        destination: "http://localhost:8000/resolve",
+        destination: `${backendUrl}/resolve`,
       },
       {
         source: "/retrieve",
-        destination: "http://localhost:8000/retrieve",
+        destination: `${backendUrl}/retrieve`,
       },
     ];
   },

@@ -91,13 +91,22 @@ app = FastAPI(
 # ─── CORS ────────────────────────────────────────────────────────────────────
 
 origins = settings.allowed_origins_list
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins + ["http://localhost:3000", "http://localhost:3001"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+if "*" in origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(set(origins + ["http://localhost:3000", "http://localhost:3001"])),
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 
 # ─── Simple Per-IP Rate Limiting ─────────────────────────────────────────────
@@ -192,3 +201,12 @@ async def root():
         "docs": "/docs",
         "health": "/api/health",
     }
+
+
+if __name__ == "__main__":
+    import os
+    import uvicorn
+
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("backend.main:app", host="0.0.0.0", port=port, reload=False)
+
