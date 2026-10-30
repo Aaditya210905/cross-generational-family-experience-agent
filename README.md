@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="frontend/public/familyfusion-logo.png" alt="FamilyFusion Logo" width="420" />
+  <img src="FamilyFusion Home Emblem.png" alt="FamilyFusion Logo" width="420" />
 </p>
 
 <h3 align="center">AI-Powered Family Activity Recommender</h3>
