@@ -69,7 +69,7 @@ class Settings(BaseSettings):
     cache_ttl_seconds: int = 300       # 5 minutes
 
     model_config = SettingsConfigDict(
-        env_file=str(_ENV_FILE),
+        env_file=(".env", str(_BACKEND_DIR / ".env"), str(_BACKEND_DIR.parent / ".env")),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
