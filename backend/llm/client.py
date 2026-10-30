@@ -55,6 +55,8 @@ Example: "Studio Ghibli" -> {{"expanded_queries": ["Spirited Away", "My Neighbor
 Example: "cozy Italian food" -> {{"expanded_queries": ["Trattoria", "Osteria", "Pasta Bar"]}}
 """
 
+_EXPANSION_CACHE: Dict[str, List[str]] = {}
+
 async def expand_preference_for_qloo(
     preference_text: str,
     category: str,
@@ -63,6 +65,10 @@ async def expand_preference_for_qloo(
     Expand a vague or generic preference into 2-3 specific entity queries
     to search Qloo's knowledge base.
     """
+    cache_key = f"{category.lower()}:{preference_text.strip().lower()}"
+    if cache_key in _EXPANSION_CACHE:
+        return _EXPANSION_CACHE[cache_key]
+
     if not is_llm_available():
         return [preference_text]
 
@@ -85,8 +91,11 @@ async def expand_preference_for_qloo(
         data = json.loads(content)
         queries = data.get("expanded_queries", [])
         if queries and isinstance(queries, list):
-            logger.info(f"LLM expanded '{preference_text}' -> {queries} for Qloo search")
-            return [str(q).strip() for q in queries if q]
+            res_list = [str(q).strip() for q in queries if q]
+            if res_list:
+                _EXPANSION_CACHE[cache_key] = res_list
+                logger.info(f"LLM expanded '{preference_text}' -> {res_list} for Qloo search")
+                return res_list
     except Exception as e:
         logger.warning(f"LLM query expansion failed for '{preference_text}': {e}")
 

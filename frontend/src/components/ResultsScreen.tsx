@@ -76,6 +76,7 @@ export default function ResultsScreen() {
         family_id: familyId,
         category: state.category || "movies",
         members: state.members.map((m) => ({
+          id: m.id,
           nickname: m.nickname,
           generation: m.generation,
           avatar_emoji: m.avatar_emoji || "👤",
@@ -110,9 +111,13 @@ export default function ResultsScreen() {
     }
   }, [familyId, state]);
 
-  // Auto-run on mount
+  // Auto-run on mount with a guard against double-invocation in React StrictMode
+  const hasTriggeredRef = useRef(false);
   useEffect(() => {
-    runPipeline();
+    if (!hasTriggeredRef.current) {
+      hasTriggeredRef.current = true;
+      runPipeline();
+    }
     return () => {
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
@@ -242,3 +247,4 @@ export default function ResultsScreen() {
     </div>
   );
 }
+

@@ -357,7 +357,7 @@
     font-size: 0.68rem;
     font-weight: 600;
     letter-spacing: 0.05em;
-    text-transform: uppercase;
+    text-transform: none;
     white-space: nowrap;
   }
   .badge--pass { background: rgba(52, 211, 153, 0.12); color: #6ee7b7; border: 1px solid rgba(52, 211, 153, 0.3); }

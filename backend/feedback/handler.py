@@ -154,6 +154,7 @@ class FeedbackHandler:
             if settings.openai_base_url:
                 client_kwargs["base_url"] = settings.openai_base_url
             client = AsyncOpenAI(**client_kwargs)
+            from backend.llm import extract_json_from_message
             response = await client.chat.completions.create(
                 model=settings.llm_model,
                 messages=[
@@ -161,11 +162,9 @@ class FeedbackHandler:
                     {"role": "user", "content": text},
                 ],
                 temperature=0.1,
-                max_tokens=200,
-                response_format={"type": "json_object"},
+                max_tokens=600,
             )
-            content = response.choices[0].message.content
-            return json.loads(content)
+            return extract_json_from_message(response.choices[0].message)
         except Exception as e:
             logger.warning(f"LLM free text parsing failed: {e}")
             return None

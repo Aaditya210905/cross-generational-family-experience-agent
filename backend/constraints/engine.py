@@ -159,31 +159,29 @@ class ConstraintEngine:
         from backend.llm import is_llm_available, evaluate_constraint_with_llm
 
         if is_llm_available():
-            for c in passed[:6]:
-                for i, cr in enumerate(c.constraint_results):
-                    if cr.status == ConstraintStatus.UNVERIFIED and cr.constraint_name in ("Mobility", "Energy Level", "Category"):
-                        try:
-                            val = getattr(constraints, cr.constraint_name.lower().replace(" ", "_"), None)
-                            if val is not None and hasattr(val, "value"):
-                                val = val.value
-                            elif val is None and cr.constraint_name == "Mobility":
+            # Only check Mobility with LLM if family explicitly noted mobility requirements
+            if constraints.mobility_notes:
+                for c in passed[:4]:
+                    for i, cr in enumerate(c.constraint_results):
+                        if cr.status == ConstraintStatus.UNVERIFIED and cr.constraint_name == "Mobility":
+                            try:
                                 val = constraints.mobility_notes
-                            eval_res = await evaluate_constraint_with_llm(
-                                name=c.entity.name,
-                                entity_type=c.entity.type,
-                                tags=c.tags,
-                                constraint_name=cr.constraint_name,
-                                constraint_value=val or "standard",
-                            )
-                            if eval_res and eval_res.get("status") in ("pass", "warning", "fail"):
-                                c.constraint_results[i] = ConstraintResult(
+                                eval_res = await evaluate_constraint_with_llm(
+                                    name=c.entity.name,
+                                    entity_type=c.entity.type,
+                                    tags=c.tags,
                                     constraint_name=cr.constraint_name,
-                                    constraint_type=cr.constraint_type,
-                                    status=ConstraintStatus(eval_res["status"]),
-                                    message=eval_res["reason"],
+                                    constraint_value=val or "standard",
                                 )
-                        except Exception as e:
-                            logger.debug(f"LLM constraint check skipped: {e}")
+                                if eval_res and eval_res.get("status") in ("pass", "warning", "fail"):
+                                    c.constraint_results[i] = ConstraintResult(
+                                        constraint_name=cr.constraint_name,
+                                        constraint_type=cr.constraint_type,
+                                        status=ConstraintStatus(eval_res["status"]),
+                                        message=eval_res["reason"],
+                                    )
+                            except Exception as e:
+                                logger.debug(f"LLM constraint check skipped: {e}")
 
         return passed, filtered
 
@@ -261,11 +259,14 @@ class ConstraintEngine:
         entity_type = candidate.entity.type.lower()
         category = constraints.category.value.lower()
 
-        # Movies category allows: movie, film, show, series
-        movie_types = {"movie", "film", "show", "series", "documentary"}
-        restaurant_types = {"restaurant", "cafe", "bar", "food", "cuisine", "eatery"}
+        # Movies category allows: movie, film, show, series, urn:entity:movie
+        movie_types = {"movie", "film", "show", "series", "documentary", "urn:entity:movie"}
+        restaurant_types = {"restaurant", "cafe", "bar", "food", "cuisine", "eatery", "urn:entity:restaurant", "urn:entity:place"}
 
-        if category == "movies" and entity_type in movie_types:
+        is_movie = any(t in entity_type for t in ["movie", "film", "show", "series", "documentary"])
+        is_restaurant = any(t in entity_type for t in ["restaurant", "cafe", "food", "cuisine", "place"])
+
+        if category == "movies" and (is_movie or entity_type in movie_types):
             return ConstraintResult(
                 constraint_name="Category",
                 constraint_type=ConstraintType.HARD,
