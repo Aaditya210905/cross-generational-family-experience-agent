@@ -7,6 +7,7 @@
 
 "use client";
 
+import Image from "next/image";
 import { useFamilyState } from "@/lib/store";
 import StepProgress from "@/components/StepProgress";
 import WelcomeScreen from "@/components/WelcomeScreen";
@@ -31,22 +32,20 @@ export default function Home() {
       {/* ── Header ── */}
       <header className="sticky top-0 z-40 border-b border-border-base bg-white/80 backdrop-blur-md">
         <div className="page-container">
-          <div className="flex items-center justify-between py-3.5">
+          <div className="flex items-center justify-between py-2.5">
             <button
               onClick={() => dispatch({ type: "SET_STEP", step: 0 })}
-              className="flex items-center gap-2.5 cursor-pointer"
+              className="flex items-center cursor-pointer hover:opacity-90 transition-opacity focus:outline-none"
+              aria-label="FamilyFusion Home"
             >
-              <div className="w-9 h-9 rounded-xl bg-amber-warm flex items-center justify-center text-lg shadow-sm group-hover:scale-105 transition-transform">
-                ✨
-              </div>
-              <div className="flex flex-col leading-tight">
-                <span className="font-display font-bold text-lg tracking-tight text-text-primary">
-                  Fusion<span className="text-amber-warm">AI</span>
-                </span>
-                <span className="text-xs text-text-muted">
-                  Cross-Generational Experiences
-                </span>
-              </div>
+              <Image
+                src="/familyfusion-logo.png"
+                alt="FamilyFusion — AI-Powered Family Activity Recommender"
+                width={200}
+                height={52}
+                className="h-11 sm:h-12 w-auto object-contain"
+                priority
+              />
             </button>
 
             <div className="flex items-center gap-2">

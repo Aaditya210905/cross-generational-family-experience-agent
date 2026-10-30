@@ -6,6 +6,8 @@
  * All /api/* routes are proxied via Next.js rewrites → localhost:8000
  */
 
+import type { ResolvedProfile } from "./types";
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
 // ── Error Class ─────────────────────────────────────────────────────────────
@@ -70,32 +72,8 @@ export async function resolvePreferences(body: {
     disliked_items: Array<{ text: string; category?: string; is_dislike: boolean }>;
   }>;
   category: string;
-}) {
-  return request<{
-    members: Array<{
-      member_id: string;
-      nickname: string;
-      resolved_likes: Array<{
-        qloo_id: string;
-        name: string;
-        entity_type: string;
-        confidence: string;
-        original_text: string;
-        tags: string[];
-        needs_confirmation: boolean;
-        alternatives: Array<{ qloo_id: string; name: string }>;
-      }>;
-      resolved_dislikes: Array<{
-        qloo_id: string;
-        name: string;
-        entity_type: string;
-        confidence: string;
-        original_text: string;
-      }>;
-      unresolved: string[];
-    }>;
-    resolution_stats: Record<string, number>;
-  }>("/api/resolve", {
+}): Promise<ResolvedProfile> {
+  return request<ResolvedProfile>("/api/resolve", {
     method: "POST",
     body: JSON.stringify(body),
   });

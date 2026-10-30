@@ -12,7 +12,7 @@ import { useState } from "react";
 import { useFamilyState } from "@/lib/store";
 import { resolvePreferences } from "@/lib/api";
 import { GENERATION_META } from "@/lib/types";
-import type { FamilyMember, Preference, CategoryType } from "@/lib/types";
+import type { FamilyMember, Preference, CategoryType, ResolvedEntity } from "@/lib/types";
 
 export default function PreferencesScreen() {
   const { state, dispatch, nextStep, prevStep } = useFamilyState();
@@ -118,27 +118,59 @@ export default function PreferencesScreen() {
   };
 
   const resolutions = state.resolutionProfile?.members.flatMap((m) => [
-    ...m.resolved_likes.map((item) => ({ ...item, member: m.nickname })),
-    ...m.resolved_dislikes.map((item) => ({ ...item, member: m.nickname })),
+    ...m.resolved_likes.map((item) => ({ ...item, member: m.nickname, member_id: m.member_id })),
+    ...m.resolved_dislikes.map((item) => ({ ...item, member: m.nickname, member_id: m.member_id })),
   ]) || [];
 
-  const updateDecision = (memberId: string, originalText: string, decision: "confirm" | "remove", replacement?: { qloo_id: string; name: string }) => {
+  const updateDecision = (
+    memberId: string,
+    originalText: string,
+    decision: "confirm" | "remove",
+    replacement?: { qloo_id: string; name: string }
+  ) => {
     if (!state.resolutionProfile) return;
-    const update = (item: { original_text: string; qloo_id: string; name: string; user_confirmed: boolean }) => item.original_text !== originalText ? item : {
-      ...item,
-      qloo_id: replacement?.qloo_id || item.qloo_id,
-      name: replacement?.name || item.name,
-      user_confirmed: decision === "confirm",
-    };
-    dispatch({ type: "SET_RESOLUTION", profile: {
-      ...state.resolutionProfile,
-      members: state.resolutionProfile.members.map((m) => m.member_id !== memberId ? m : {
-        ...m,
-        resolved_likes: m.resolved_likes.map(update),
-        resolved_dislikes: m.resolved_dislikes.map(update),
-        unresolved: decision === "remove" ? [...m.unresolved, originalText] : m.unresolved,
-      }),
-    }});
+
+    dispatch({
+      type: "SET_RESOLUTION",
+      profile: {
+        ...state.resolutionProfile,
+        members: state.resolutionProfile.members.map((m) => {
+          if (m.member_id !== memberId) return m;
+
+          if (decision === "remove") {
+            return {
+              ...m,
+              resolved_likes: m.resolved_likes.filter(
+                (item) => item.original_text !== originalText
+              ),
+              resolved_dislikes: m.resolved_dislikes.filter(
+                (item) => item.original_text !== originalText
+              ),
+              unresolved: m.unresolved.includes(originalText)
+                ? m.unresolved
+                : [...m.unresolved, originalText],
+            };
+          }
+
+          const updateItem = (item: ResolvedEntity): ResolvedEntity => {
+            if (item.original_text !== originalText) return item;
+            return {
+              ...item,
+              qloo_id: replacement?.qloo_id || item.qloo_id,
+              name: replacement?.name || item.name,
+              needs_confirmation: false,
+              user_confirmed: true,
+            };
+          };
+
+          return {
+            ...m,
+            resolved_likes: m.resolved_likes.map(updateItem),
+            resolved_dislikes: m.resolved_dislikes.map(updateItem),
+          };
+        }),
+      },
+    });
   };
 
   return (
