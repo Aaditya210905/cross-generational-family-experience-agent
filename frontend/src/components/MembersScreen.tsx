@@ -1,9 +1,9 @@
 /**
- * FamilyFusion AI — Family Members Screen (Step 1)
+ * FusionAI — Family Members Screen (Step 1)
  *
- * Modern expansive 2-column dashboard layout:
- * - Left: Member Creator & Generation Selector with demographic insight
- * - Right: Active Family Cohort Grid with live balance stats
+ * Clean two-column layout:
+ * - Left: Member creation form with generation selector
+ * - Right: Family roster with per-member cards
  */
 
 "use client";
@@ -45,189 +45,183 @@ export default function MembersScreen() {
 
   const canProceed = state.members.length >= 2;
 
-  // Generational tally for cohort breakdown
   const genCounts = state.members.reduce((acc, m) => {
     acc[m.generation] = (acc[m.generation] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
   return (
-    <div className="flex-1 flex flex-col px-4 sm:px-6 lg:px-8 py-8 md:py-10 max-w-[1440px] mx-auto w-full relative z-10">
-      {/* ── Page Header ────────────────────────────────────────────── */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 pb-6 border-b border-white/[0.08]">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-violet-500/15 border border-violet-500/30 text-violet-300 text-xs sm:text-sm font-semibold mb-3">
-            <span>Step 1 • Demographics &amp; Cohort Setup</span>
+    <div className="flex-1 flex flex-col px-4 sm:px-6 lg:px-8 py-8 md:py-12 max-w-[1440px] mx-auto w-full relative z-10">
+      {/* ── Page Header ── */}
+      <div className="page-header">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <span className="page-eyebrow inline-block">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-warm inline-block mr-1.5" />
+              Step 1 • Family Members
+            </span>
+            <h2 className="page-title">
+              Who is in the family?
+            </h2>
+            <p className="page-subtitle">
+              Assemble 2 to 6 family members across any generation. Our cultural intelligence
+              engine balances everyone&apos;s tastes with guaranteed fairness.
+            </p>
           </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white mb-2">
-            👨‍👩‍👧‍👦 Who is in the Family?
-          </h2>
-          <p className="text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed">
-            Assemble 2 to 6 family members across any generation. Our cultural intelligence engine balances everyone&apos;s tastes with guaranteed fairness.
-          </p>
-        </div>
 
-        {/* Activity Category Pill */}
-        <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-white/[0.04] border border-white/[0.08] text-sm self-start md:self-auto">
-          <span className="text-slate-400">Current Category:</span>
-          <span className="font-bold text-violet-300 flex items-center gap-1.5">
-            <span className="text-base">{CATEGORY_META[state.category]?.emoji}</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border-base bg-white text-text-secondary text-sm font-medium">
+            <span className="text-sm">🎬</span>
             <span>{CATEGORY_META[state.category]?.label}</span>
-          </span>
-          <button
-            onClick={prevStep}
-            className="text-xs text-violet-400 hover:text-violet-300 ml-1 underline cursor-pointer font-medium"
-          >
-            change
-          </button>
+            <button
+              onClick={prevStep}
+              className="ml-2 text-[10px] font-bold uppercase text-text-muted hover:text-amber-warm underline hover:no-underline cursor-pointer"
+            >
+              change category
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* ── Main 2-Column Dashboard Grid ───────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full mb-10 items-start">
-        {/* ── Left Column: Add Member Form (5 Cols) ────────────────── */}
-        <div className="lg:col-span-5 flex flex-col gap-6">
-          <div className="glass-card p-6 sm:p-7 border border-violet-500/25 shadow-2xl rounded-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-violet-300 flex items-center gap-2">
-                <span>➕</span>
-                <span>Add Family Member</span>
-              </span>
-              <span className="text-xs text-slate-400 font-mono font-medium">
-                {state.members.length}/6 slots filled
-              </span>
-            </div>
+      {/* ── Main Grid ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+        {/* ── Left Column: Add Member ── */}
+        <div className="lg:col-span-5 flex flex-col gap-5">
+          <div className="card flex flex-col gap-4">
+            <div className="card-body">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-warm flex items-center gap-1.5">
+                  <span>➕</span>
+                  <span>Add family member</span>
+                </span>
+                <span className="text-xs font-mono text-text-muted">
+                  {state.members.length} / 6
+                </span>
+              </div>
 
-            {/* Input & Key Hint */}
-            <div className="relative mb-5">
-              <label className="block text-xs sm:text-sm font-semibold text-slate-300 mb-2">
-                Name or Nickname
-              </label>
-              <div className="relative">
+              <div className="field">
+                <label className="field-label">Name or nickname</label>
                 <input
                   type="text"
-                  placeholder="e.g. Grandma Rose, Dad, Zoe, Arjun"
+                  placeholder="e.g. Grandma Rose, Dad, Zoe"
                   value={nickname}
                   onChange={(e) => setNickname(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="wizard-input pr-16 text-base"
+                  className="field-input"
                   maxLength={30}
                   autoFocus
                 />
-                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-mono hidden sm:inline-block bg-white/[0.06] px-2 py-0.5 rounded border border-white/10">
-                  ↵ Enter
-                </span>
               </div>
-            </div>
 
-            {/* Generation Selector */}
-            <div className="mb-6">
-              <label className="block text-xs sm:text-sm font-semibold text-slate-300 mb-2.5">
-                Select Generation Bracket
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {generationKeys.map((gen) => {
-                  const meta = GENERATION_META[gen];
-                  const isSelected = generation === gen;
-                  return (
-                    <button
-                      key={gen}
-                      type="button"
-                      onClick={() => setGeneration(gen)}
-                      className={`flex items-start gap-3 p-3 rounded-xl transition-all border text-left cursor-pointer ${
-                        isSelected
-                          ? "bg-gradient-to-r from-violet-600/30 to-fuchsia-600/30 border-violet-400 shadow-[0_0_15px_rgba(139,92,246,0.25)]"
-                          : "bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.06] hover:border-white/20 text-slate-300"
-                      }`}
-                    >
-                      <span className="text-2xl mt-0.5">{meta.emoji}</span>
-                      <div className="min-w-0">
-                        <span className={`block text-xs sm:text-sm font-bold ${isSelected ? "text-white" : "text-slate-200"}`}>
-                          {meta.label}
-                        </span>
-                        <span className="block text-[11px] text-slate-400 truncate">
-                          {GENERATION_HINTS[gen]}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
+              <div className="field">
+                <label className="field-label">Generation bracket</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {generationKeys.map((gen) => {
+                    const meta = GENERATION_META[gen];
+                    const isSelected = generation === gen;
+                    return (
+                      <button
+                        key={gen}
+                        type="button"
+                        onClick={() => setGeneration(gen)}
+                        className={`flex flex-col items-start gap-2 p-3 rounded-lg border transition-all duration-200 text-left cursor-pointer ${
+                          isSelected
+                            ? "bg-amber-warm-light border-amber-warm/30"
+                            : "border-border-base bg-white hover:bg-cream-100 hover:border-border-hover"
+                        }`}
+                      >
+                        <span className="text-xl">{meta.emoji}</span>
+                        <div>
+                          <span className={`block text-sm font-bold ${isSelected ? "text-text-primary" : "text-text-secondary"}`}>
+                            {meta.label}
+                          </span>
+                          <span className="block text-[11px] text-text-muted">
+                            {GENERATION_HINTS[gen]}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
 
-            {/* Submit Button */}
-            <button
-              onClick={handleAdd}
-              disabled={!nickname.trim() || state.members.length >= 6}
-              className="w-full btn-primary py-3.5 text-base font-bold rounded-xl shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40"
-            >
-              <span>+ Add to Family Cohort</span>
-            </button>
+              <button
+                onClick={handleAdd}
+                disabled={!nickname.trim() || state.members.length >= 6}
+                className="w-full btn btn--primary py-3 text-base font-bold rounded-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                <span>+ Add to family</span>
+              </button>
+            </div>
           </div>
 
-          {/* Demographic Intelligence Pill Box */}
-          <div className="glass-card p-5 border border-white/[0.08] rounded-2xl bg-white/[0.02]">
-            <h4 className="text-xs sm:text-sm font-bold text-slate-200 mb-2 flex items-center gap-2">
-              <span>🧠</span>
-              <span>Fairness Engine Demographic Balancing</span>
-            </h4>
-            <p className="text-xs text-slate-400 leading-relaxed mb-3">
-              Each generation contributes distinct cultural weights. When recommendations are scored, individual veto thresholds prevent any single family member from feeling excluded.
-            </p>
-            {Object.keys(genCounts).length > 0 && (
-              <div className="flex flex-wrap gap-2 pt-2 border-t border-white/[0.06]">
-                {Object.entries(genCounts).map(([gen, count]) => {
-                  const meta = GENERATION_META[gen as GenerationLabel];
-                  return (
-                    <span
-                      key={gen}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-xs font-semibold text-violet-300"
-                    >
-                      <span>{meta?.emoji}</span>
-                      <span>{count} {meta?.label}</span>
-                    </span>
-                  );
-                })}
-              </div>
-            )}
+          {/* Demographic balancing note */}
+          <div className="card">
+            <div className="card-body card-body--sm">
+              <h4 className="font-display font-bold text-sm text-text-primary mb-2 flex items-center gap-2">
+                <span>🧠</span>
+                <span>Fairness engine</span>
+              </h4>
+              <p className="text-sm text-text-secondary leading-relaxed mb-3">
+                Each generation contributes distinct cultural weights. When recommendations are
+                scored, individual veto thresholds prevent any single family member from feeling
+                excluded.
+              </p>
+              {Object.keys(genCounts).length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-2 border-t border-border-base">
+                  {Object.entries(genCounts).map(([gen, count]) => {
+                    const meta = GENERATION_META[gen as GenerationLabel];
+                    return (
+                      <span
+                        key={gen}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-warm-light border border-amber-warm/20 text-xs font-semibold text-amber-warm"
+                      >
+                        <span>{meta?.emoji}</span>
+                        <span>{count} {meta?.label}</span>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* ── Right Column: Active Family Cohort Roster (7 Cols) ────── */}
+        {/* ── Right Column: Family Roster ── */}
         <div className="lg:col-span-7 flex flex-col gap-4">
           <div className="flex items-center justify-between px-1 mb-1">
             <div className="flex items-center gap-2.5">
-              <h3 className="text-base sm:text-lg font-bold text-white">
-                Active Family Cohort
+              <h3 className="font-display font-bold text-base text-text-primary">
+                Family roster
               </h3>
-              <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-400/30">
+              <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-amber-warm-light border border-amber-warm/20 text-amber-warm">
                 {state.members.length} of 6
               </span>
             </div>
 
             {canProceed ? (
-              <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/30">
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-sage bg-sage-light px-3 py-1 rounded-full border border-sage/20">
                 <span>✓</span>
-                <span>Ready for Preferences</span>
+                <span>Ready for preferences</span>
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-amber-300 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/30">
-                <span>⚠️</span>
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-warm bg-amber-warm-light px-3 py-1 rounded-full border border-amber-warm/20">
+                <span>⚠</span>
                 <span>Add at least {2 - state.members.length} more member{state.members.length === 1 ? "" : "s"}</span>
               </span>
             )}
           </div>
 
           {state.members.length === 0 ? (
-            <div className="glass-card p-12 text-center border-dashed border-white/15 rounded-2xl">
-              <div className="text-5xl mb-4 animate-float">🫂</div>
-              <h4 className="font-extrabold text-lg sm:text-xl text-white mb-2">No Family Members Added Yet</h4>
-              <p className="text-sm text-slate-300 max-w-md mx-auto leading-relaxed mb-6">
-                Use the form on the left to add your family members (e.g., grandparents, parents, teens, kids). We need at least 2 members to calculate taste overlaps.
+            <div className="card flex-1 flex flex-col items-center justify-center p-10 text-center">
+              <div className="text-4xl mb-4">🫂</div>
+              <h4 className="font-display font-bold text-lg text-text-primary mb-2">No family members yet</h4>
+              <p className="text-sm text-text-secondary max-w-md mx-auto leading-relaxed mb-6">
+                Use the form on the left to add your family members. We need at least 2 members
+                to calculate taste overlaps.
               </p>
-              <div className="inline-flex items-center gap-2 text-xs text-slate-400 bg-white/[0.04] px-4 py-2 rounded-xl border border-white/10">
+              <div className="inline-flex items-center gap-2 text-xs text-text-muted bg-cream-100 px-4 py-2 rounded-full border border-border-base">
                 <span>💡</span>
-                <span>Or return to the Overview tab to load pre-built demo families</span>
+                <span>Or load a pre-built demo family from the welcome screen</span>
               </div>
             </div>
           ) : (
@@ -237,23 +231,22 @@ export default function MembersScreen() {
                 return (
                   <div
                     key={member.id}
-                    className="glass-card p-5 border border-white/[0.08] hover:border-violet-500/40 transition-all rounded-2xl flex flex-col justify-between group shadow-lg"
+                    className="card p-5 flex flex-col justify-between group hover:border-amber-warm/40 transition-all"
                   >
                     <div>
-                      {/* Top Row: Avatar + Actions */}
                       <div className="flex items-start justify-between gap-3 mb-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-violet-500/20 to-fuchsia-500/20 border border-white/15 flex items-center justify-center text-2xl shadow-inner">
+                          <div className="w-12 h-12 rounded-lg bg-cream-100 border border-border-base flex items-center justify-center text-xl">
                             {meta.emoji}
                           </div>
                           <div>
-                            <div className="font-extrabold text-base sm:text-lg text-white flex items-center gap-2">
+                            <div className="font-display font-bold text-base text-text-primary flex items-center gap-2">
                               <span>{member.nickname}</span>
-                              <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-white/[0.06] text-slate-400">
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white text-text-muted border border-border-base">
                                 #{index + 1}
                               </span>
                             </div>
-                            <span className="inline-block text-xs font-semibold text-violet-300">
+                            <span className="inline-block text-xs font-semibold text-amber-warm">
                               {meta.label}
                             </span>
                           </div>
@@ -261,24 +254,23 @@ export default function MembersScreen() {
 
                         <button
                           onClick={() => removeMember(member.id)}
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-rose-500/20 border border-transparent hover:border-rose-500/40 transition-all cursor-pointer"
+                          className="w-8 h-8 rounded-md flex items-center justify-center text-text-muted hover:text-terracotta hover:bg-terracotta-light border border-transparent hover:border-terracotta/30 transition-all cursor-pointer"
                           title={`Remove ${member.nickname}`}
                         >
                           ✕
                         </button>
                       </div>
 
-                      {/* Taste Signals Count */}
-                      <div className="text-xs text-slate-400 font-medium bg-white/[0.03] px-3 py-2 rounded-xl border border-white/[0.06] mb-3">
-                        <span>❤️ {member.liked_items.length} Likes</span>
+                      <div className="text-xs text-text-muted font-medium bg-cream-50 px-3 py-2 rounded-md border border-border-base mb-3">
+                        <span>❤️ {member.liked_items.length} likes</span>
                         <span className="mx-2">•</span>
-                        <span>🚫 {member.disliked_items.length} Dislikes</span>
+                        <span>🚫 {member.disliked_items.length} dislikes</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-white/[0.06]">
+                    <div className="flex items-center justify-between text-xs text-text-muted pt-2 border-t border-border-base">
                       <span>{GENERATION_HINTS[member.generation]}</span>
-                      <span className="text-emerald-400 font-semibold">Active</span>
+                      <span className="text-sage font-semibold">Active</span>
                     </div>
                   </div>
                 );
@@ -288,21 +280,21 @@ export default function MembersScreen() {
         </div>
       </div>
 
-      {/* ── Footer Navigation Bar ─────────────────────────────────── */}
-      <div className="w-full flex items-center justify-between pt-6 border-t border-white/[0.1] mt-auto">
+      {/* ── Footer Navigation ── */}
+      <div className="w-full flex items-center justify-between pt-8 border-t border-border-base mt-auto">
         <button
           onClick={prevStep}
-          className="btn-secondary text-sm sm:text-base px-6 py-3 rounded-xl cursor-pointer"
+          className="btn btn--secondary text-sm px-6 py-3 rounded-lg cursor-pointer"
         >
-          ← Overview &amp; Demos
+          ← Welcome & demos
         </button>
 
         <button
           onClick={nextStep}
           disabled={!canProceed}
-          className="btn-primary text-sm sm:text-base px-8 py-3.5 rounded-xl shadow-xl flex items-center gap-3 cursor-pointer disabled:opacity-40 font-bold"
+          className="btn btn--primary text-sm px-8 py-3.5 rounded-lg shadow-sm flex items-center gap-2 cursor-pointer disabled:opacity-50 font-bold"
         >
-          <span>Continue to Preferences</span>
+          <span>Continue to preferences</span>
           <span className="text-lg">→</span>
         </button>
       </div>

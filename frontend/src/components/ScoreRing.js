@@ -1,9 +1,10 @@
 /**
  * FusionAI — Score Ring Component
- * 
- * High-tech circular progress gauge with glowing gradient stroke
+ *
+ * Clean circular progress gauge with warm accent colors
  * and crisp typography.
  */
+
 'use client';
 
 export default function ScoreRing({ score, size = 76, strokeWidth = 6 }) {
@@ -12,15 +13,14 @@ export default function ScoreRing({ score, size = 76, strokeWidth = 6 }) {
   const offset = circumference * (1 - Math.min(1, Math.max(0, score)));
   const percentage = Math.round(score * 100);
 
-  // Gradient id for SVG
   const gradientId = `score-grad-${percentage}`;
 
-  // Neon color palette based on score
+  // Warm accent colors based on score
   const getGradientColors = (s) => {
-    if (s >= 0.75) return { start: '#10b981', end: '#06b6d4' }; // Emerald to Cyan
-    if (s >= 0.55) return { start: '#6366f1', end: '#a855f7' }; // Indigo to Purple
-    if (s >= 0.35) return { start: '#f59e0b', end: '#fbbf24' }; // Amber
-    return { start: '#f43f5e', end: '#fb7185' };                 // Rose
+    if (s >= 0.75) return { start: '#65a30d', end: '#4d7c0f' }; // Sage green
+    if (s >= 0.55) return { start: '#b45309', end: '#92400e' }; // Warm amber
+    if (s >= 0.35) return { start: '#d97706', end: '#b45309' }; // Amber
+    return { start: '#c2410c', end: '#a3330a' };                 // Terracotta
   };
 
   const { start, end } = getGradientColors(score);

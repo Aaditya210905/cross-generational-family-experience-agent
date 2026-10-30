@@ -90,11 +90,11 @@ export const GENERATION_META: Record<
   GenerationLabel,
   { label: string; emoji: string; color: string; bgColor: string }
 > = {
-  grandparent: { label: "Grandparent", emoji: "👴", color: "text-amber-400", bgColor: "bg-amber-500/10" },
-  parent: { label: "Parent", emoji: "👨", color: "text-blue-400", bgColor: "bg-blue-500/10" },
-  young_adult: { label: "Young Adult", emoji: "🧑", color: "text-purple-400", bgColor: "bg-purple-500/10" },
-  teen: { label: "Teen", emoji: "🧑‍🎤", color: "text-pink-400", bgColor: "bg-pink-500/10" },
-  child: { label: "Child", emoji: "👧", color: "text-green-400", bgColor: "bg-green-500/10" },
+  grandparent: { label: "Grandparent", emoji: "👴", color: "text-amber-warm", bgColor: "bg-amber-warm-light" },
+  parent: { label: "Parent", emoji: "👨", color: "text-amber-warm", bgColor: "bg-amber-warm-light" },
+  young_adult: { label: "Young Adult", emoji: "🧑", color: "text-amber-warm", bgColor: "bg-amber-warm-light" },
+  teen: { label: "Teen", emoji: "🧑‍🎤", color: "text-amber-warm", bgColor: "bg-amber-warm-light" },
+  child: { label: "Child", emoji: "👧", color: "text-amber-warm", bgColor: "bg-amber-warm-light" },
 };
 
 export const CATEGORY_META: Record<
