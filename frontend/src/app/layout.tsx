@@ -18,9 +18,18 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "FusionAI — Cross-Generational Experiences",
+  title: "FamilyFusion — AI-Powered Family Activity Recommender",
   description:
     "Discover movies, restaurants, and activities your whole family will love — powered by Qloo taste intelligence.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/icon.png", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-icon.png" },
+    ],
+  },
 };
 
 export default function RootLayout({

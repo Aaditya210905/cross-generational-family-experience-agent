@@ -14,7 +14,7 @@ tenacity>=9.0.0
 openai>=1.51.0
 
 # SSE Streaming
-sse-starlette>=2.1.0
+sse-starlette>=2.1.0,<3.0.0
 
 # Environment
 python-dotenv>=1.0.0

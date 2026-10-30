@@ -156,79 +156,76 @@ FAMILY_2_PROFILE = FamilyProfileRequest(
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# FAMILY 3: The Williams Family — Adventure Seekers with Accessibility
 # ═══════════════════════════════════════════════════════════════════════════
-# Grandpa Bob loves war films and steakhouses, uses a wheelchair.
-# Dad Mike loves sci-fi and BBQ.
-# Daughter Zoe (13) loves Disney/Pixar and pizza.
-# Son Sam (10) loves superheroes and mac & cheese.
+# FAMILY 3: The Williams Family — Adventure & Outings with Accessibility
+# ═══════════════════════════════════════════════════════════════════════════
+# Grandpa Bob loves history museums and scenic riverwalks, uses a wheelchair.
+# Dad Mike loves science centers, planetariums, and outdoor festivals.
+# Daughter Zoe (13) loves botanical gardens, escape rooms, and photography walks.
+# Son Sam (10) loves aquariums, dinosaur halls, and interactive science parks.
 
 FAMILY_3_MEMBERS = [
     FamilyMember(
         id="williams-bob",
         nickname="Grandpa Bob",
         generation=GenerationLabel.GRANDPARENT,
-        avatar_emoji="👴🏻",
+        avatar_emoji="👴🏼",
         liked_items=[
-            "Saving Private Ryan", "The Bridge on the River Kwai",
-            "Schindler's List", "documentaries", "historical films",
-            "steakhouse", "classic diner", "American grill"
+            "Field Museum of Natural History", "Chicago Riverwalk", "Art Institute of Chicago",
+            "botanical garden tour", "aviation museum", "scenic lakefront cruise"
         ],
-        disliked_items=["cartoons", "loud pop music venues", "sushi"],
+        disliked_items=["rollercoasters", "strenuous hiking", "extreme crowds"],
     ),
     FamilyMember(
         id="williams-mike",
         nickname="Dad Mike",
         generation=GenerationLabel.PARENT,
-        avatar_emoji="👨🏻",
+        avatar_emoji="👨🏼",
         liked_items=[
-            "Interstellar", "The Martian", "Blade Runner 2049",
-            "sci-fi", "action-adventure", "Christopher Nolan",
-            "BBQ restaurant", "craft brewery", "sports bar"
+            "Museum of Science and Industry", "Adler Planetarium", "interactive science museum",
+            "board game cafe", "lakefront bike ride", "outdoor festival"
         ],
-        disliked_items=["romance movies", "vegan restaurants"],
+        disliked_items=["shopping malls", "indoor playpens"],
     ),
     FamilyMember(
         id="williams-zoe",
         nickname="Zoe",
         generation=GenerationLabel.TEEN,
-        avatar_emoji="👧🏻",
+        avatar_emoji="👧🏼",
         liked_items=[
-            "Moana", "Inside Out", "Encanto",
-            "Disney", "Pixar", "fantasy", "musicals",
-            "pizza place", "ice cream shop", "pancake house"
+            "Lincoln Park Conservatory", "Navy Pier Ferris Wheel", "escape room challenge",
+            "art and science museum", "sunset beach walk", "botanical garden tour"
         ],
-        disliked_items=["scary movies", "very spicy food"],
+        disliked_items=["dull lectures", "stuffy quiet archives"],
     ),
     FamilyMember(
         id="williams-sam",
         nickname="Sam",
         generation=GenerationLabel.CHILD,
-        avatar_emoji="👦🏻",
+        avatar_emoji="👦🏼",
         liked_items=[
-            "Spider-Man: Into the Spider-Verse", "The Incredibles",
-            "Lego Movie", "superheroes", "animated films", "adventure",
-            "mac and cheese", "chicken tenders", "milkshakes"
+            "Shedd Aquarium", "Chicago Children's Museum", "miniature golf",
+            "dinosaur exhibits", "planetarium space shows", "zoo wildlife tour"
         ],
-        disliked_items=["sad movies", "seafood"],
+        disliked_items=["long walking tours without breaks", "silent art galleries"],
     ),
 ]
 
 FAMILY_3_CONSTRAINTS = Constraints(
     budget_band=BudgetBand.MEDIUM,
     location="Chicago",
-    time_available=TimeAvailable.LONG,
+    time_available=TimeAvailable.MEDIUM,
     energy_level=EnergyLevel.LOW,
     dietary=[],
-    mobility_notes="Grandpa Bob uses a wheelchair — needs wheelchair accessible venues",
-    category=Category.MOVIES,
+    mobility_notes="Grandpa Bob uses a wheelchair — requires wheelchair accessible & step-free venues",
+    category=Category.ACTIVITIES,
 )
 
 FAMILY_3_PROFILE = FamilyProfileRequest(
     family_id="demo-williams",
     members=FAMILY_3_MEMBERS,
     constraints=FAMILY_3_CONSTRAINTS,
-    category=Category.MOVIES,
+    category=Category.ACTIVITIES,
 )
 
 
@@ -476,136 +473,96 @@ def get_mock_pool_family_2() -> CandidatePool:
 
 
 def get_mock_pool_family_3() -> CandidatePool:
-    """Williams Family — Movies for 4 members across 3 generations."""
+    """Williams Family — Activities & Outings for 4 members across 3 generations."""
     R = ScoreSource.REAL
     E = ScoreSource.ESTIMATED
     candidates = [
         _make_candidate(
-            "q-wall-e", "WALL·E", "movie",
-            ["animation", "sci-fi", "pixar", "family", "heartwarming", "environmental", "adventure"],
+            "act-msi", "Museum of Science and Industry", "activity",
+            ["museum", "science", "interactive", "family_friendly", "wheelchair_accessible", "chicago"],
             {
-                "williams-bob": (0.55, E), "williams-mike": (0.80, R),
-                "williams-zoe": (0.88, R), "williams-sam": (0.85, R),
+                "williams-bob": (0.85, R), "williams-mike": (0.95, R),
+                "williams-zoe": (0.88, R), "williams-sam": (0.92, R),
             },
-            ["williams-mike", "williams-zoe", "williams-sam"],
-            {"runtime_min": 98, "year": 2008, "language": "English"},
+            ["williams-mike", "williams-sam", "williams-zoe"],
+            {"price_level": 2, "runtime_min": 180, "location": "Chicago", "wheelchair_accessible": True},
         ),
         _make_candidate(
-            "q-apollo13", "Apollo 13", "movie",
-            ["drama", "historical", "space", "sci-fi", "true_story", "adventure", "suspenseful"],
+            "act-shedd", "Shedd Aquarium", "activity",
+            ["aquarium", "animals", "ocean", "accessible", "family_friendly", "indoor", "chicago"],
             {
-                "williams-bob": (0.88, R), "williams-mike": (0.85, R),
-                "williams-zoe": (0.40, E), "williams-sam": (0.45, E),
+                "williams-bob": (0.78, R), "williams-mike": (0.82, R),
+                "williams-zoe": (0.85, R), "williams-sam": (0.98, R),
             },
-            ["williams-bob", "williams-mike"],
-            {"runtime_min": 140, "year": 1995, "language": "English"},
+            ["williams-sam", "williams-zoe"],
+            {"price_level": 2, "runtime_min": 150, "location": "Chicago", "wheelchair_accessible": True},
         ),
         _make_candidate(
-            "q-incredibles", "The Incredibles", "movie",
-            ["animation", "superhero", "family", "action", "pixar", "comedy", "adventure"],
+            "act-adler", "Adler Planetarium & Sky Theater", "activity",
+            ["planetarium", "space", "accessible", "scenic_views", "chicago", "seated"],
             {
-                "williams-bob": (0.50, E), "williams-mike": (0.78, R),
-                "williams-zoe": (0.82, R), "williams-sam": (0.92, R),
+                "williams-bob": (0.80, R), "williams-mike": (0.92, R),
+                "williams-zoe": (0.75, R), "williams-sam": (0.88, R),
             },
-            ["williams-mike", "williams-zoe", "williams-sam"],
-            {"runtime_min": 115, "year": 2004, "language": "English"},
+            ["williams-mike", "williams-sam"],
+            {"price_level": 2, "runtime_min": 120, "location": "Chicago", "wheelchair_accessible": True},
         ),
         _make_candidate(
-            "q-up", "Up", "movie",
-            ["animation", "adventure", "pixar", "family", "emotional", "heartwarming", "comedy"],
+            "act-lincoln-park", "Lincoln Park Conservatory & Gardens", "activity",
+            ["botanical_garden", "nature", "peaceful", "accessible", "free", "family", "chicago"],
             {
-                "williams-bob": (0.72, R), "williams-mike": (0.70, R),
-                "williams-zoe": (0.85, R), "williams-sam": (0.80, R),
+                "williams-bob": (0.90, R), "williams-mike": (0.65, E),
+                "williams-zoe": (0.92, R), "williams-sam": (0.60, E),
             },
             ["williams-bob", "williams-zoe"],
-            {"runtime_min": 96, "year": 2009, "language": "English"},
+            {"price_level": 0, "runtime_min": 90, "location": "Chicago", "wheelchair_accessible": True},
         ),
         _make_candidate(
-            "q-hidden-figures", "Hidden Figures", "movie",
-            ["drama", "historical", "space", "inspiring", "true_story", "family_friendly"],
+            "act-field-museum", "Field Museum of Natural History", "activity",
+            ["museum", "dinosaurs", "history", "accessible", "educational", "chicago"],
             {
-                "williams-bob": (0.82, R), "williams-mike": (0.75, R),
-                "williams-zoe": (0.60, E), "williams-sam": (0.35, E),
+                "williams-bob": (0.92, R), "williams-mike": (0.80, R),
+                "williams-zoe": (0.78, R), "williams-sam": (0.90, R),
+            },
+            ["williams-bob", "williams-sam"],
+            {"price_level": 2, "runtime_min": 180, "location": "Chicago", "wheelchair_accessible": True},
+        ),
+        _make_candidate(
+            "act-riverwalk", "Chicago Riverwalk & Architecture Cruise", "activity",
+            ["scenic_walk", "waterfront", "accessible", "architecture", "chicago", "outdoor"],
+            {
+                "williams-bob": (0.88, R), "williams-mike": (0.85, R),
+                "williams-zoe": (0.80, R), "williams-sam": (0.68, E),
             },
             ["williams-bob", "williams-mike"],
-            {"runtime_min": 127, "year": 2016, "language": "English"},
+            {"price_level": 2, "runtime_min": 90, "location": "Chicago", "wheelchair_accessible": True},
         ),
         _make_candidate(
-            "q-big-hero-6", "Big Hero 6", "movie",
-            ["animation", "superhero", "sci-fi", "family", "comedy", "adventure", "disney"],
+            "act-navy-pier", "Navy Pier Pavilion & Centennial Wheel", "activity",
+            ["sightseeing", "waterfront", "accessible", "family_attraction", "chicago"],
             {
-                "williams-bob": (0.40, E), "williams-mike": (0.72, R),
-                "williams-zoe": (0.80, R), "williams-sam": (0.90, R),
+                "williams-bob": (0.70, E), "williams-mike": (0.75, R),
+                "williams-zoe": (0.86, R), "williams-sam": (0.88, R),
             },
             ["williams-zoe", "williams-sam"],
-            {"runtime_min": 102, "year": 2014, "language": "English"},
+            {"price_level": 2, "runtime_min": 120, "location": "Chicago", "wheelchair_accessible": True},
         ),
         _make_candidate(
-            "q-dunkirk", "Dunkirk", "movie",
-            ["war", "historical", "drama", "intense", "christopher_nolan", "action"],
+            "act-millennium-park", "Millennium Park & Cloud Gate Plaza", "activity",
+            ["public_park", "art", "scenic", "accessible", "free", "chicago"],
             {
-                "williams-bob": (0.90, R), "williams-mike": (0.82, R),
-                "williams-zoe": (0.25, E), "williams-sam": (0.20, E),
+                "williams-bob": (0.82, R), "williams-mike": (0.78, R),
+                "williams-zoe": (0.88, R), "williams-sam": (0.72, R),
             },
-            ["williams-bob", "williams-mike"],
-            {"runtime_min": 106, "year": 2017, "language": "English"},
-        ),
-        _make_candidate(
-            "q-raya", "Raya and the Last Dragon", "movie",
-            ["animation", "adventure", "fantasy", "disney", "action", "family", "cultural"],
-            {
-                "williams-bob": (0.38, E), "williams-mike": (0.55, E),
-                "williams-zoe": (0.88, R), "williams-sam": (0.82, R),
-            },
-            ["williams-zoe"],
-            {"runtime_min": 107, "year": 2021, "language": "English"},
-        ),
-        _make_candidate(
-            "q-jurassic-park", "Jurassic Park", "movie",
-            ["sci-fi", "adventure", "action", "family", "dinosaurs", "classic", "thrilling"],
-            {
-                "williams-bob": (0.70, R), "williams-mike": (0.88, R),
-                "williams-zoe": (0.65, R), "williams-sam": (0.78, R),
-            },
-            ["williams-mike"],
-            {"runtime_min": 127, "year": 1993, "language": "English"},
-        ),
-        _make_candidate(
-            "q-night-at-museum", "Night at the Museum", "movie",
-            ["comedy", "adventure", "family", "fantasy", "historical", "fun"],
-            {
-                "williams-bob": (0.62, R), "williams-mike": (0.58, E),
-                "williams-zoe": (0.75, R), "williams-sam": (0.80, R),
-            },
-            ["williams-zoe", "williams-sam"],
-            {"runtime_min": 108, "year": 2006, "language": "English"},
-        ),
-        _make_candidate(
-            "q-gravity", "Gravity", "movie",
-            ["sci-fi", "thriller", "space", "drama", "intense", "visual_masterpiece"],
-            {
-                "williams-bob": (0.65, R), "williams-mike": (0.85, R),
-                "williams-zoe": (0.30, E), "williams-sam": (0.25, E),
-            },
-            ["williams-mike"],
-            {"runtime_min": 91, "year": 2013, "language": "English"},
-        ),
-        _make_candidate(
-            "q-luca", "Luca", "movie",
-            ["animation", "pixar", "family", "friendship", "summer", "italy", "heartwarming"],
-            {
-                "williams-bob": (0.45, E), "williams-mike": (0.60, E),
-                "williams-zoe": (0.82, R), "williams-sam": (0.78, R),
-            },
-            ["williams-zoe"],
-            {"runtime_min": 95, "year": 2021, "language": "English"},
+            ["williams-bob", "williams-zoe"],
+            {"price_level": 0, "runtime_min": 75, "location": "Chicago", "wheelchair_accessible": True},
         ),
     ]
     return CandidatePool(
         candidates=candidates,
         members=FAMILY_3_MEMBERS,
         family_id="demo-williams",
-        category=Category.MOVIES,
+        category=Category.ACTIVITIES,
         constraints=FAMILY_3_CONSTRAINTS,
     )
 
@@ -628,8 +585,8 @@ ALL_DEMO_FAMILIES = {
     "demo-williams": {
         "profile": FAMILY_3_PROFILE,
         "pool_fn": get_mock_pool_family_3,
-        "label": "The Williams Family — Adventure Seekers",
-        "description": "Grandpa Bob (wheelchair), Dad Mike, Zoe (13), Sam (10) — Sci-fi meets Disney",
+        "label": "The Williams Family — Adventure & Outings",
+        "description": "Grandpa Bob (wheelchair), Dad Mike, Zoe (13), Sam (10) — Accessible science museums, gardens & lakefront outings",
     },
 }
 

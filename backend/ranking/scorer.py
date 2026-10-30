@@ -198,6 +198,9 @@ class GroupScorer:
             data_source=candidate.data_source,
             tags=candidate.tags,
             metadata=candidate.metadata,
+            average_score=round(weighted_avg, 4),
+            bridge_bonus=round(bridge_bonus, 4),
+            soft_constraint_penalty=0.0,
         )
 
     def _compute_bridge_bonus(

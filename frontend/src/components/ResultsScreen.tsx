@@ -1,4 +1,4 @@
-﻿/**
+/**
  * FusionAI — Results Screen (Step 4)
  *
  * Full results experience integrating the multi-agent pipeline:
@@ -30,6 +30,8 @@ interface ProgressEvent {
   details?: Record<string, unknown>;
 }
 
+// Retained for the explicit demo route; ordinary requests never call this fallback.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function generateFallbackResults(members: Array<{ nickname: string; generation: string; avatar_emoji?: string }>, category: string) {
   const safeMembers = members.length > 0 ? members : [
     { nickname: "Grandma Rose", generation: "grandparent", avatar_emoji: "👵" },
@@ -201,7 +203,7 @@ export default function ResultsScreen() {
   const eventSourceRef = useRef<EventSource | null>(null);
 
   const familyId = state.members.length > 0
-    ? `family-${state.members.map((m) => m.nickname).join("-")}`.toLowerCase().replace(/\s+/g, "-")
+    ? `family-${state.members.map((m) => (m.nickname || "member").replace(/[^a-zA-Z0-9]/g, "")).join("-")}`.toLowerCase() || "demo-family"
     : "demo-family";
 
   const runPipeline = useCallback(async (adjustment: unknown = null) => {
@@ -228,20 +230,27 @@ export default function ResultsScreen() {
     }
 
     try {
+      const safeMembers = (state.members && state.members.length > 0)
+        ? state.members
+        : [
+            { id: "m1", nickname: "Nani", generation: "grandparent" as const, avatar_emoji: "👵🏽", liked_items: ["Bollywood classics"], disliked_items: [] },
+            { id: "m2", nickname: "Priya", generation: "parent" as const, avatar_emoji: "👩🏽", liked_items: ["Family drama"], disliked_items: [] },
+          ];
+
       const familyProfile = {
         family_id: familyId,
         category: state.category || "movies",
-        members: state.members.map((m) => ({
-          id: m.id,
-          nickname: m.nickname,
-          generation: m.generation,
-          avatar_emoji: m.avatar_emoji || "👤",
-          liked_items: m.liked_items.map((item: { text: string } | string) =>
-            typeof item === "string" ? item : item.text
-          ),
-          disliked_items: (m.disliked_items || []).map((item: { text: string } | string) =>
-            typeof item === "string" ? item : item.text
-          ),
+        members: safeMembers.map((m) => ({
+          id: m.id || `m-${Math.random().toString(36).slice(2, 8)}`,
+          nickname: m.nickname || "Family Member",
+          generation: m.generation || "parent",
+          avatar_emoji: ("avatar_emoji" in m ? (m as { avatar_emoji?: string }).avatar_emoji : "👤") || "👤",
+          liked_items: (m.liked_items || []).map((item: { text?: string } | string) =>
+            typeof item === "string" ? item : (item?.text || "")
+          ).filter(Boolean),
+          disliked_items: (m.disliked_items || []).map((item: { text?: string } | string) =>
+            typeof item === "string" ? item : (item?.text || "")
+          ).filter(Boolean),
         })),
         constraints: {
           budget_band: state.constraints?.budget || "any",
@@ -249,9 +258,18 @@ export default function ResultsScreen() {
           location: state.constraints?.at_home ? "at_home" : (state.constraints?.location || null),
           dietary: state.constraints?.dietary_restrictions || [],
           mobility_notes: state.constraints?.mobility_notes || null,
-          time_available: "any",
+          time_available: state.constraints?.time_available_minutes
+            ? (state.constraints.time_available_minutes <= 60 ? "short" : state.constraints.time_available_minutes <= 180 ? "medium" : "long")
+            : "any",
           category: state.category || "movies",
         },
+        confirmed_entity_ids: Object.fromEntries(
+          (state.resolutionProfile?.members || []).flatMap((member) =>
+            [...member.resolved_likes, ...member.resolved_dislikes]
+              .filter((item) => item.user_confirmed && item.qloo_id)
+              .map((item) => [`${member.member_id}:${item.original_text}`, item.qloo_id]),
+          ),
+        ),
       };
 
       const data = await getRecommendations(familyProfile, adjustment) as { results?: unknown[] };
@@ -259,15 +277,15 @@ export default function ResultsScreen() {
         setResults(data.results);
         setIsDemoMode(false);
       } else {
-        const fallback = generateFallbackResults(state.members, state.category);
-        setResults(fallback);
-        setIsDemoMode(true);
+        setResults([]);
+        setIsDemoMode(false);
+        setError("No live Qloo candidates were available. We did not substitute demo recommendations.");
       }
-    } catch {
-      const fallback = generateFallbackResults(state.members, state.category);
-      setResults(fallback);
-      setIsDemoMode(true);
-      setError(null);
+    } catch (err) {
+      console.error("Recommend pipeline failed:", err);
+      setResults([]);
+      setIsDemoMode(false);
+      setError("The live recommendation service is unavailable. Please retry.");
     } finally {
       setIsRunning(false);
       if (eventSourceRef.current) {

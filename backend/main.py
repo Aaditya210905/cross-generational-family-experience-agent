@@ -147,6 +147,24 @@ async def rate_limit_middleware(request: Request, call_next):
 
 # ─── Global Error Handler ────────────────────────────────────────────────────
 
+from fastapi.exceptions import RequestValidationError
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Handle schema validation errors and log detail."""
+    logger.warning(f"Validation error on {request.method} {request.url.path}: {exc.errors()}")
+    return JSONResponse(
+        status_code=422,
+        content={
+            "error": "validation_error",
+            "message": "Invalid request payload",
+            "detail": exc.errors(),
+            "status_code": 422,
+        },
+    )
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """Catch-all error handler so the frontend always gets a structured response."""

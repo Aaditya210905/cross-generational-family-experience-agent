@@ -138,6 +138,35 @@ class TestSoftConstraints:
         assert passed[0].group_score < 0.90
         assert any(c.status == ConstraintStatus.WARNING for c in passed[0].constraint_results)
 
+    def test_budget_free_tier(self):
+        engine = ConstraintEngine()
+        free_venue = _make_candidate(
+            "p0", "Millennium Park",
+            entity_type="activity",
+            metadata={"price_level": 0},
+            tags=["free"],
+            group_score=0.95,
+        )
+        paid_venue = _make_candidate(
+            "p1", "Aquarium",
+            entity_type="activity",
+            metadata={"price_level": 2},
+            group_score=0.90,
+        )
+        free_constraints = Constraints(
+            category=Category.ACTIVITIES,
+            budget_band=BudgetBand.FREE,
+        )
+
+        passed, _ = engine.apply_all([free_venue, paid_venue], free_constraints)
+        free_res = next(c for c in passed if c.entity.qloo_id == "p0")
+        assert free_res.group_score == 0.95
+        assert any(c.status == ConstraintStatus.PASS for c in free_res.constraint_results)
+
+        paid_res = next(c for c in passed if c.entity.qloo_id == "p1")
+        assert paid_res.group_score < 0.90
+        assert any(c.status == ConstraintStatus.WARNING for c in paid_res.constraint_results)
+
     def test_energy_mismatch_applies_warning(self):
         engine = ConstraintEngine()
         arcade = _make_candidate(

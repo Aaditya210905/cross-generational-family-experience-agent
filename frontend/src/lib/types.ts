@@ -6,7 +6,7 @@
 
 export type GenerationLabel = "grandparent" | "parent" | "teen" | "child" | "young_adult";
 export type CategoryType = "movies" | "restaurants" | "activities";
-export type ConfidenceLevel = "high" | "medium" | "low" | "unresolved";
+export type ConfidenceLevel = "exact" | "near" | "ambiguous" | "high" | "medium" | "low" | "unresolved";
 export type BudgetBand = "free" | "low" | "medium" | "high" | "any";
 export type EnergyLevel = "low" | "medium" | "high" | "any";
 
@@ -49,6 +49,16 @@ export interface ResolvedMember {
 export interface ResolvedProfile {
   members: ResolvedMember[];
   resolution_stats: Record<string, number>;
+}
+
+export interface PreferenceResolution {
+  originalText: string;
+  qlooId?: string;
+  name?: string;
+  confidence: ConfidenceLevel;
+  userConfirmed: boolean;
+  alternatives: ResolvedEntity[];
+  unresolved: boolean;
 }
 
 export interface ConstraintConfig {
