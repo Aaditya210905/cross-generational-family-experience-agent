@@ -1,11 +1,12 @@
 /**
- * FamilyFusion AI — Welcome Screen (Step 0)
+ * FusionAI — Welcome Screen (Step 0)
  *
- * Futuristic landing experience featuring:
- * - Cyberpunk/Glassmorphic Hero with gradient typography
- * - Interactive category cards with glowing borders
- * - Bento-grid demo family dossiers with 1-click instant load
- * - Holographic feature cards highlighting Qloo taste intelligence
+ * Clean warm editorial landing experience:
+ * - Centered hero with headline and subtitle
+ * - Activity category selection
+ * - Primary CTA to build a custom family profile
+ * - Demo family cards for instant exploration
+ * - Feature highlights
  */
 
 "use client";
@@ -42,12 +43,11 @@ export default function WelcomeScreen() {
         if (Array.isArray(data) && data.length > 0) {
           setDemos(data);
         } else {
-          // Robust fallback demo presets
           setDemos([
             {
               family_id: "demo-sharma",
-              label: "The Sharma Family — Three Generations",
-              description: "Nani (grandparent), Priya (parent), Arjun (teen) — Bollywood meets anime & modern Marvel.",
+              label: "The Sharma Family",
+              description: "Three generations — Bollywood classics meet anime and modern Marvel.",
               member_count: 3,
               category: "movies",
               members: [
@@ -58,8 +58,8 @@ export default function WelcomeScreen() {
             },
             {
               family_id: "demo-tanaka-rodriguez",
-              label: "The Tanaka-Rodriguez Family — Cross-Cultural",
-              description: "Carlos (Mexican), Yuki (Japanese), Sofia (Gen-Z) — High-flavor culinary crossover.",
+              label: "The Tanaka-Rodriguez Family",
+              description: "Cross-cultural household — high-flavor culinary crossover.",
               member_count: 3,
               category: "restaurants",
               members: [
@@ -70,8 +70,8 @@ export default function WelcomeScreen() {
             },
             {
               family_id: "demo-williams",
-              label: "The Williams Family — Adventure Seekers",
-              description: "Grandpa Bob (wheelchair access), Dad Mike, Zoe (13), Sam (10) — Sci-fi, Disney & mobility friendly.",
+              label: "The Williams Family",
+              description: "Adventure seekers — sci-fi, Disney, and mobility-friendly outings.",
               member_count: 4,
               category: "movies",
               members: [
@@ -89,8 +89,8 @@ export default function WelcomeScreen() {
         setDemos([
           {
             family_id: "demo-sharma",
-            label: "The Sharma Family — Three Generations",
-            description: "Nani (grandparent), Priya (parent), Arjun (teen) — Bollywood meets anime & Marvel.",
+            label: "The Sharma Family",
+            description: "Three generations — Bollywood classics meet anime and modern Marvel.",
             member_count: 3,
             category: "movies",
             members: [
@@ -101,8 +101,8 @@ export default function WelcomeScreen() {
           },
           {
             family_id: "demo-tanaka-rodriguez",
-            label: "The Tanaka-Rodriguez Family — Cross-Cultural",
-            description: "Carlos (Mexican), Yuki (Japanese), Sofia (Gen-Z) — Fusion dining adventure.",
+            label: "The Tanaka-Rodriguez Family",
+            description: "Cross-cultural household — high-flavor culinary crossover.",
             member_count: 3,
             category: "restaurants",
             members: [
@@ -113,8 +113,8 @@ export default function WelcomeScreen() {
           },
           {
             family_id: "demo-williams",
-            label: "The Williams Family — Adventure Seekers",
-            description: "Grandpa Bob (wheelchair), Dad Mike, Zoe (13), Sam (10) — Accessible sci-fi outings.",
+            label: "The Williams Family",
+            description: "Adventure seekers — sci-fi, Disney, and mobility-friendly outings.",
             member_count: 4,
             category: "movies",
             members: [
@@ -160,7 +160,6 @@ export default function WelcomeScreen() {
         setFetchError("Invalid demo family data.");
       }
     } catch {
-      // Fallback local load
       if (familyId === "demo-sharma") {
         dispatch({
           type: "LOAD_DEMO",
@@ -211,40 +210,30 @@ export default function WelcomeScreen() {
   };
 
   return (
-    <div className="flex-1 flex flex-col items-center px-4 sm:px-6 lg:px-8 py-10 md:py-16 relative z-10 max-w-[1440px] mx-auto w-full">
-      {/* ── Futuristic Hero ────────────────────────────────────────── */}
-      <div className="text-center max-w-4xl mx-auto mb-12">
-        {/* Top Floating Badge */}
-        <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full bg-gradient-to-r from-violet-500/20 via-fuchsia-500/20 to-pink-500/20 border border-violet-400/40 text-violet-300 text-xs sm:text-sm font-semibold mb-6 shadow-[0_0_30px_rgba(139,92,246,0.25)]">
-          <span className="w-2.5 h-2.5 rounded-full bg-violet-400 animate-pulse shadow-[0_0_8px_#a78bfa]" />
-          <span>Cultural AI Taste Intelligence</span>
-          <span className="text-slate-500">•</span>
-          <span className="text-fuchsia-300">Qloo Powered</span>
-          <span className="text-slate-500">•</span>
-          <span className="text-cyan-300">Fairness Consensus Engine</span>
-        </div>
+    <div className="flex-1 flex flex-col items-center px-4 sm:px-6 lg:px-8 py-12 md:py-20 relative z-10 max-w-[1440px] mx-auto w-full">
+      {/* ── Hero ── */}
+      <div className="text-center max-w-3xl mx-auto mb-16">
+        <span className="page-eyebrow inline-block">
+          <span className="w-2.5 h-2.5 rounded-full bg-amber-warm inline-block mr-1.5" />
+          Cultural Taste Intelligence • Powered by Qloo
+        </span>
 
-        {/* Main Headline */}
-        <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight mb-6 leading-[1.12]">
-          Unite Every Generation
-          <br />
-          <span className="text-gradient">
-            In One Shared Experience
-          </span>
+        <h1 className="page-title">
+          Find experiences every generation loves
         </h1>
 
-        {/* Subtitle */}
-        <p className="text-base sm:text-lg md:text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
-          No more movie arguments or dinner stalemates. Map cultural taste overlaps across all ages — discover restaurants, films, and outings the whole family genuinely loves.
+        <p className="page-subtitle">
+          No more movie arguments or dinner stalemates. Map cultural taste overlaps across all
+          ages — discover restaurants, films, and outings the whole family genuinely enjoys.
         </p>
       </div>
 
-      {/* ── Category Selector Bar ──────────────────────────────────── */}
-      <div className="w-full max-w-3xl mb-12 text-center">
-        <p className="text-xs sm:text-sm uppercase tracking-widest text-slate-400 font-bold mb-3.5">
+      {/* ── Category Selector ── */}
+      <div className="w-full max-w-3xl mb-16">
+        <div className="field-label text-center mb-3">
           Select Your Activity Domain
-        </p>
-        <div className="grid grid-cols-3 gap-3 p-2 rounded-2xl bg-white/[0.04] border border-white/[0.08] backdrop-blur-xl shadow-xl">
+        </div>
+        <div className="grid grid-cols-3 gap-2 p-1 rounded-xl border border-border-base bg-white shadow-soft">
           {(Object.entries(CATEGORY_META) as [CategoryType, typeof CATEGORY_META["movies"]][]).map(
             ([key, meta]) => {
               const isSelected = state.category === key;
@@ -252,14 +241,14 @@ export default function WelcomeScreen() {
                 <button
                   key={key}
                   onClick={() => dispatch({ type: "SET_CATEGORY", category: key })}
-                  className={`flex flex-col sm:flex-row items-center justify-center gap-2.5 py-3.5 px-4 rounded-xl transition-all duration-300 cursor-pointer ${
+                  className={`flex items-center justify-center gap-2 py-3 px-3 rounded-lg transition-all duration-300 cursor-pointer text-sm font-medium ${
                     isSelected
-                      ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-bold shadow-[0_0_24px_rgba(139,92,246,0.5)] border border-violet-400/50 scale-[1.02]"
-                      : "hover:bg-white/[0.06] text-slate-300 hover:text-white"
+                      ? "bg-amber-warm text-white border border-amber-warm"
+                      : "bg-white text-text-secondary border-transparent hover:bg-cream-100 hover:text-text-primary hover:border-border-hover"
                   }`}
                 >
-                  <span className="text-2xl">{meta.emoji}</span>
-                  <span className="text-sm sm:text-base font-semibold">{meta.label}</span>
+                  <span className="text-lg">{meta.emoji}</span>
+                  <span>{meta.label}</span>
                 </button>
               );
             },
@@ -267,138 +256,116 @@ export default function WelcomeScreen() {
         </div>
       </div>
 
-      {/* ── Primary Action Callout ─────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row items-center gap-4 mb-16">
+      {/* ── Primary CTA ── */}
+      <div className="flex flex-col sm:flex-row items-center gap-4 mb-16 max-w-2xl mx-auto">
         <button
           onClick={nextStep}
-          className="btn-primary text-base sm:text-lg px-8 sm:px-10 py-4 rounded-2xl shadow-[0_0_30px_rgba(139,92,246,0.5)] flex items-center gap-3 hover:scale-105 transition-all cursor-pointer font-bold"
+          className="btn btn--primary btn--lg flex items-center gap-2.5 justify-center w-full sm:w-auto text-center sm:text-left"
         >
-          <span>✨ Build Custom Family Profile</span>
+          <span>Build custom family profile</span>
           <span className="text-xl">→</span>
         </button>
       </div>
 
-      {/* ── Divider with Neon Accent ────────────────────────────────── */}
-      <div className="w-full max-w-5xl flex items-center gap-4 mb-10">
-        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
-        <span className="text-xs sm:text-sm uppercase tracking-widest text-slate-300 font-bold px-4 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.1] shadow-sm">
-          ⚡ Or Explore Pre-Engineered Demographics
+      {/* ── Divider ── */}
+      <div className="w-full max-w-4xl flex items-center gap-3 mb-12">
+        <div className="flex-1 h-[1px] bg-border-base" />
+        <span className="text-[10px] font-bold tracking-widest uppercase text-text-muted px-3">
+          Or explore pre-built family scenarios
         </span>
-        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+        <div className="flex-1 h-[1px] bg-border-base" />
       </div>
 
-      {/* ── Bento Grid: Demo Family Dossiers ───────────────────────── */}
+      {/* ── Demo Families ── */}
       <div className="w-full max-w-[1440px] mb-16">
         {fetchError && (
-          <p className="text-center text-amber-400 text-sm mb-4">{fetchError}</p>
+          <p className="text-center text-terracotta text-sm mb-4">{fetchError}</p>
         )}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {demos.map((demo) => (
             <div
               key={demo.family_id}
-              className="demo-card group flex flex-col justify-between p-6 sm:p-7 border border-violet-500/20 bg-[rgba(16,20,36,0.85)] hover:border-violet-400/60 transition-all rounded-2xl"
+              className="card card--raised flex flex-col justify-between p-5 sm:p-6 transition-all"
             >
               <div>
-                {/* Header Badge */}
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/30">
-                    {demo.category === "movies" ? "🎬 Movies & Shows" : demo.category === "restaurants" ? "🍽️ Dining" : "🎯 Outings"}
+                <div className="flex items-center justify-between mb-3">
+                  <span className="badge badge--source">
+                    {demo.member_count} members
                   </span>
-                  <span className="text-xs sm:text-sm text-slate-400 font-mono font-medium">
-                    {demo.member_count} Members
+                  <span className="text-[10px] font-bold uppercase text-text-muted">
+                    {demo.category === "movies" ? "Movies & Shows" : demo.category === "restaurants" ? "Dining" : "Outings"}
                   </span>
                 </div>
 
-                {/* Title */}
-                <h3 className="font-extrabold text-lg sm:text-xl text-white mb-2.5 group-hover:text-violet-300 transition-colors">
+                <h3 className="font-display font-bold text-lg text-text-primary mb-1.5 group-hover:text-amber-warm transition-colors">
                   {demo.label}
                 </h3>
 
-                {/* Description */}
-                <p className="text-sm text-slate-300 mb-5 leading-relaxed">
+                <p className="text-sm text-text-secondary leading-relaxed mb-4">
                   {demo.description}
                 </p>
 
-                {/* Member Avatars Stack */}
-                {demo.members && demo.members.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {demo.members.map((m) => (
-                      <span
-                        key={m.nickname}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.06] text-xs sm:text-sm text-slate-200 border border-white/[0.1]"
-                      >
-                        <span className="text-base">{m.avatar_emoji || "👤"}</span>
-                        <span className="font-semibold">{m.nickname}</span>
-                      </span>
-                    ))}
-                  </div>
-                )}
+                <div className="flex flex-wrap gap-2 mb-5">
+                  {demo.members.map((m) => (
+                    <span
+                      key={m.nickname}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-cream-100 border border-border-base text-xs text-text-secondary font-medium"
+                    >
+                      <span className="text-sm">{m.avatar_emoji || "👤"}</span>
+                      <span>{m.nickname}</span>
+                    </span>
+                  ))}
+                </div>
               </div>
 
-              {/* Action Button */}
               <button
                 onClick={() => handleLoadDemo(demo.family_id)}
                 disabled={loadingDemo !== null}
-                className="w-full py-3.5 px-4 rounded-xl bg-violet-600/20 hover:bg-violet-600/40 group-hover:border-violet-400/50 border border-violet-500/30 text-sm font-bold text-violet-200 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full btn btn--secondary text-sm py-2.5 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
-                {loadingDemo === demo.family_id ? (
-                  <span className="animate-pulse">Loading AI Profile...</span>
-                ) : (
-                  <>
-                    <span>⚡ Launch Family Scenario</span>
-                    <span className="group-hover:translate-x-1 transition-transform">→</span>
-                  </>
-                )}
+                <span>Load scenario</span>
+                <span className="text-sm">→</span>
               </button>
             </div>
           ))}
         </div>
       </div>
 
-      {/* ── Holographic Feature Cards ───────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-[1440px] w-full mb-16">
+      {/* ── Features ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-[1440px] w-full mb-12">
         {[
           {
             icon: "🧠",
             title: "Qloo Cultural Vectors",
-            desc: "Understands high-dimensional taste connections across genres, eras, and cultures with zero cold-start delay.",
-            gradient: "from-violet-500/10 to-purple-500/5",
-            accent: "text-violet-400",
+            desc: "Understands high-dimensional taste connections across genres, eras, and cultures.",
           },
           {
             icon: "⚖️",
             title: "Fairness-Weighted Scoring",
-            desc: "Enforces satisfaction floor constraints so no family member's preferences are drowned out by the majority.",
-            gradient: "from-cyan-500/10 to-blue-500/5",
-            accent: "text-cyan-400",
+            desc: "Ensures no family member&apos;s preferences are drowned out by the majority.",
           },
           {
             icon: "💡",
-            title: "Grounded LLM Explanations",
-            desc: "Explains precisely why each recommendation bridges the family's generation gap with transparent, factual reasons.",
-            gradient: "from-pink-500/10 to-rose-500/5",
-            accent: "text-pink-400",
+            title: "Grounded Explanations",
+            desc: "Explains why each recommendation bridges the generation gap.",
           },
         ].map((feature) => (
-          <div
-            key={feature.title}
-            className={`feature-card p-6 sm:p-7 rounded-2xl bg-gradient-to-br ${feature.gradient} border border-white/10`}
-          >
-            <div className="text-4xl mb-4">{feature.icon}</div>
-            <h3 className={`font-bold text-lg mb-2 ${feature.accent}`}>
+          <div key={feature.title} className="card p-5 sm:p-6">
+            <div className="text-2xl mb-3">{feature.icon}</div>
+            <h4 className="font-display font-bold text-base text-text-primary mb-2">
               {feature.title}
-            </h3>
-            <p className="text-sm text-slate-300 leading-relaxed">
+            </h4>
+            <p className="text-sm text-text-secondary leading-relaxed">
               {feature.desc}
             </p>
           </div>
         ))}
       </div>
 
-      {/* ── Footer ──────────────────────────────────────────────────── */}
-      <div className="text-center text-sm text-slate-400 font-medium pb-8">
-        Powered by <span className="text-violet-400 font-semibold">Qloo Cultural Intelligence API</span> &amp;{" "}
-        <span className="text-fuchsia-400 font-semibold">Groq AI Acceleration</span>
+      {/* ── Footer ── */}
+      <div className="text-center text-sm text-text-muted font-medium pb-4">
+        Powered by{" "}
+        <span className="text-text-primary font-semibold">Qloo Cultural Intelligence API</span>
       </div>
     </div>
   );

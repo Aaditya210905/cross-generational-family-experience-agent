@@ -1,4 +1,4 @@
-/**
+﻿/**
  * FusionAI — Results Screen (Step 4)
  *
  * Full results experience integrating the multi-agent pipeline:
@@ -30,7 +30,6 @@ interface ProgressEvent {
   details?: Record<string, unknown>;
 }
 
-// High-fidelity fallback recommendations when backend is offline
 function generateFallbackResults(members: Array<{ nickname: string; generation: string; avatar_emoji?: string }>, category: string) {
   const safeMembers = members.length > 0 ? members : [
     { nickname: "Grandma Rose", generation: "grandparent", avatar_emoji: "👵" },
@@ -192,7 +191,6 @@ function generateFallbackResults(members: Array<{ nickname: string; generation: 
 export default function ResultsScreen() {
   const { state, dispatch } = useFamilyState();
 
-  // Pipeline state
   const [isRunning, setIsRunning] = useState(false);
   const [events, setEvents] = useState<ProgressEvent[]>([]);
   const [results, setResults] = useState<unknown[]>([]);
@@ -206,16 +204,14 @@ export default function ResultsScreen() {
     ? `family-${state.members.map((m) => m.nickname).join("-")}`.toLowerCase().replace(/\s+/g, "-")
     : "demo-family";
 
-  // Run recommendation pipeline
   const runPipeline = useCallback(async (adjustment: unknown = null) => {
     setIsRunning(true);
     setError(null);
     setEvents([
-      { step: "qloo_vectors", status: "running", message: "Connecting to Qloo Cultural Intelligence API..." },
-      { step: "resolve_preferences", status: "running", message: "Vectorizing generational cohort tastes & preferences..." },
+      { step: "qloo_vectors", status: "running", message: "Connecting to Qloo Cultural Intelligence API…" },
+      { step: "resolve_preferences", status: "running", message: "Vectorizing generational cohort tastes & preferences…" },
     ]);
 
-    // Connect to SSE stream for live progress if available
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
     }
@@ -232,7 +228,6 @@ export default function ResultsScreen() {
     }
 
     try {
-      // Build family profile
       const familyProfile = {
         family_id: familyId,
         category: state.category || "movies",
@@ -264,13 +259,11 @@ export default function ResultsScreen() {
         setResults(data.results);
         setIsDemoMode(false);
       } else {
-        // Fallback demo simulation
         const fallback = generateFallbackResults(state.members, state.category);
         setResults(fallback);
         setIsDemoMode(true);
       }
     } catch {
-      // When backend is offline or errors, seamlessly provide smart consensus results
       const fallback = generateFallbackResults(state.members, state.category);
       setResults(fallback);
       setIsDemoMode(true);
@@ -283,21 +276,16 @@ export default function ResultsScreen() {
     }
   }, [familyId, state]);
 
-  // Auto-run on mount with a guard against double-invocation in React StrictMode
-  const hasTriggeredRef = useRef(false);
   useEffect(() => {
-    if (!hasTriggeredRef.current) {
-      hasTriggeredRef.current = true;
-      runPipeline();
-    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    runPipeline();
     return () => {
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
       }
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [runPipeline]);
 
-  // Handle feedback
   const handleFeedback = useCallback(async (
     entityId: string,
     entityName: string,
@@ -315,7 +303,6 @@ export default function ResultsScreen() {
       setRound((r) => r + 1);
       await runPipeline(adjustment);
     } catch {
-      // In demo mode, simulate feedback refinement
       setRound((r) => r + 1);
       setTimeout(() => {
         setIsRunning(false);
@@ -333,75 +320,79 @@ export default function ResultsScreen() {
   };
 
   return (
-    <div className="flex-1 flex flex-col px-4 sm:px-6 lg:px-8 py-8 md:py-10 max-w-[1440px] mx-auto w-full relative z-10">
-      {/* ── Header ───────────────────────────────────────────────── */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 pb-6 border-b border-white/[0.08]">
-        <div>
-          <div className="flex items-center gap-2.5 mb-2">
-            <span className="text-xs font-extrabold uppercase tracking-wider px-3 py-1 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30">
-              Round {round}
-            </span>
-            <span className="text-sm text-slate-300 font-medium">
-              {state.members.length} Family Members • Category: <strong className="text-white capitalize">{state.category}</strong>
-            </span>
-            {isDemoMode && (
-              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                🟡 Demo Synthesis Mode
+    <div className="flex-1 flex flex-col px-4 sm:px-6 lg:px-8 py-8 md:py-12 max-w-[1440px] mx-auto w-full relative z-10">
+      {/* ── Page Header ── */}
+      <div className="page-header">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2.5 mb-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-warm-light text-amber-warm border border-amber-warm/20">
+                Round {round}
               </span>
-            )}
+              <span className="text-sm text-text-muted font-medium">
+                {state.members.length} family members • Category:{" "}
+                <strong className="text-text-primary capitalize">{state.category}</strong>
+              </span>
+              {isDemoMode && (
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-warm-light text-amber-warm border border-amber-warm/20">
+                  Demo synthesis mode
+                </span>
+              )}
+            </div>
+            <h2 className="page-title">
+              {isRunning ? "Calculating cross-generational consensus…" : "Family consensus recommendations"}
+            </h2>
+            <p className="page-subtitle">
+              Ranked by multi-agent fairness algorithms to guarantee everyone finds genuine joy
+              without feeling compromised.
+            </p>
           </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-violet-300 via-fuchsia-300 to-cyan-300 bg-clip-text text-transparent">
-            {isRunning ? "Calculating Cross-Generational Consensus..." : "Family Consensus Recommendations"}
-          </h2>
-          <p className="text-sm sm:text-base text-slate-300 mt-2 max-w-2xl">
-            Ranked by multi-agent fairness algorithms to guarantee everyone finds genuine joy without feeling compromised.
-          </p>
-        </div>
 
-        <div className="flex items-center gap-3 self-start md:self-auto">
-          <button
-            onClick={() => runPipeline()}
-            disabled={isRunning}
-            className="px-4 py-2.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-xs sm:text-sm font-semibold text-slate-200 hover:text-white transition-all cursor-pointer flex items-center gap-2"
-          >
-            <span>🔄</span>
-            <span>Re-Run Analysis</span>
-          </button>
-          <button
-            onClick={handleStartOver}
-            className="btn-secondary text-xs sm:text-sm px-4 py-2.5 rounded-xl cursor-pointer"
-          >
-            ← Start Over
-          </button>
+          <div className="flex items-center gap-2 self-start md:self-auto">
+            <button
+              onClick={() => runPipeline()}
+              disabled={isRunning}
+              className="btn btn--ghost text-sm px-4 py-2.5 rounded-lg cursor-pointer disabled:opacity-50"
+            >
+              <span>🔄</span>
+              <span>Re-run analysis</span>
+            </button>
+            <button
+              onClick={handleStartOver}
+              className="btn btn--secondary text-sm px-4 py-2.5 rounded-lg cursor-pointer"
+            >
+              ← Start over
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* ── Agent Trace Panel ─────────────────────────────────────── */}
+      {/* ── Agent Trace Panel ── */}
       {(isRunning || events.length > 0) && (
-        <div className="mb-8 w-full">
+        <div className="mb-10 w-full">
           <AgentTrace events={events} isRunning={isRunning} />
         </div>
       )}
 
-      {/* ── Error Banner ──────────────────────────────────────────── */}
+      {/* ── Error Banner ── */}
       {error && (
-        <div className="glass-card p-4 mb-6 border border-rose-500/30 bg-rose-500/10 flex items-center justify-between rounded-xl">
-          <p className="text-rose-300 text-sm font-medium">⚠️ {error}</p>
+        <div className="card p-4 mb-10 border-terracotta/30 bg-terracotta-light flex items-center justify-between rounded-xl">
+          <p className="text-terracotta text-sm font-medium">⚠ {error}</p>
           <button
             onClick={() => runPipeline()}
-            className="text-xs sm:text-sm font-bold text-rose-300 hover:text-white underline ml-3 cursor-pointer"
+            className="text-xs font-bold text-terracotta hover:text-terracotta/80 underline ml-3 cursor-pointer"
           >
-            Retry Pipeline
+            Retry pipeline
           </button>
         </div>
       )}
 
-      {/* ── Shimmer Skeleton Placeholder ──────────────────────────── */}
+      {/* ── Skeleton Placeholder ── */}
       {isRunning && results.length === 0 && <SkeletonResults count={3} />}
 
-      {/* ── Recommendation Cards ──────────────────────────────────── */}
+      {/* ── Recommendation Cards ── */}
       {!isRunning && results.length > 0 && (
-        <div className="results-grid w-full space-y-6">
+        <div className="flex flex-col gap-6">
           {(results as Array<{ entity?: { qloo_id?: string } }>).map((result, i) => (
             <ResultCard
               key={result?.entity?.qloo_id || i}
@@ -414,19 +405,20 @@ export default function ResultsScreen() {
         </div>
       )}
 
-      {/* ── Empty State ───────────────────────────────────────────── */}
+      {/* ── Empty State ── */}
       {!isRunning && !error && results.length === 0 && (
-        <div className="glass-card p-14 text-center border-dashed border-white/15 my-8 rounded-2xl">
-          <div className="text-6xl mb-4 animate-float">🎯</div>
-          <h3 className="font-extrabold text-xl text-white mb-2">No Matching Experiences Found</h3>
-          <p className="text-sm text-slate-300 max-w-md mx-auto mb-6 leading-relaxed">
-            The current constraints or taste profiles were too restrictive. Try expanding your budget, setting, or adding more likes.
+        <div className="empty-state">
+          <span className="empty-state__icon">🎯</span>
+          <h3 className="empty-state__title">No matching experiences found</h3>
+          <p className="empty-state__desc">
+            The current constraints or taste profiles were too restrictive. Try expanding your
+            budget, setting, or adding more likes.
           </p>
           <button
             onClick={() => dispatch({ type: "SET_STEP", step: 3 })}
-            className="btn-primary text-sm sm:text-base px-8 py-3.5 rounded-xl shadow-lg cursor-pointer"
+            className="btn btn--primary"
           >
-            Adjust Constraints →
+            Adjust constraints →
           </button>
         </div>
       )}
