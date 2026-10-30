@@ -425,13 +425,13 @@ class RetrievalEngine:
         member_ids: list[str],
     ) -> None:
         """
-        Normalize all per-person scores to 0-1 using min-max normalization.
-        
-        This ensures a generous scorer doesn't dominate the group ranking.
-        Applied per-person across all candidates.
+        Scale each person's scores relative to their own strongest affinity.
+
+        Min-max stretching maps the weakest item to 0, which then collapses
+        fairness ranking (min_score term). Max-normalization keeps relative
+        affinity without inventing artificial zeros.
         """
         for member_id in member_ids:
-            # Collect all scores for this member
             scores = []
             for candidate in candidates:
                 for ps in candidate.per_person_scores:
@@ -441,20 +441,11 @@ class RetrievalEngine:
             if not scores:
                 continue
 
-            min_score = min(scores)
             max_score = max(scores)
-            score_range = max_score - min_score
+            if max_score <= 0:
+                continue
 
-            if score_range < 0.001:
-                # All scores are the same — normalize to 0.5
-                for candidate in candidates:
-                    for ps in candidate.per_person_scores:
-                        if ps.member_id == member_id:
-                            ps.score = 0.5
-            else:
-                for candidate in candidates:
-                    for ps in candidate.per_person_scores:
-                        if ps.member_id == member_id:
-                            ps.score = round(
-                                (ps.score - min_score) / score_range, 4
-                            )
+            for candidate in candidates:
+                for ps in candidate.per_person_scores:
+                    if ps.member_id == member_id:
+                        ps.score = round(min(1.0, ps.score / max_score), 4)

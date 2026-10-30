@@ -22,7 +22,8 @@ from typing import Any, Dict, List, Optional
 from backend.config import get_settings
 from backend.explain.evidence import build_evidence_packet
 from backend.explain.templates import generate_template_explanation
-from contracts.models import FamilyMember, ScoredCandidate
+from backend.llm import complete_json
+from contracts.models import FamilyMember, ScoredCandidate, taste_texts
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +84,7 @@ async def generate_explanations(
                 bridges = await discover_semantic_bridges(
                     candidate.entity.name,
                     candidate.tags,
-                    [{"nickname": m.nickname, "generation": m.generation.value, "liked_items": m.liked_items} for m in members]
+                    [{"nickname": m.nickname, "generation": m.generation.value, "liked_items": taste_texts(m.liked_items)} for m in members]
                 )
                 if bridges:
                     candidate.bridge_themes = bridges
@@ -127,29 +128,18 @@ async def _call_llm(
     settings: Any,
 ) -> Optional[Any]:
     try:
-        from openai import AsyncOpenAI
-
-        client_kwargs = {"api_key": settings.openai_api_key}
-        if settings.openai_base_url:
-            client_kwargs["base_url"] = settings.openai_base_url
-        client = AsyncOpenAI(**client_kwargs)
-
         evidence_json = json.dumps(evidence, indent=2, default=str)
         user_prompt = USER_PROMPT_TEMPLATE.format(evidence_json=evidence_json)
 
-        response = await client.chat.completions.create(
-            model=settings.llm_model,
-            messages=[
+        parsed = await complete_json(
+            [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_prompt},
             ],
             temperature=0.4,
             max_tokens=settings.llm_max_tokens,
-            response_format={"type": "json_object"},
         )
-
-        content = response.choices[0].message.content
-        return json.loads(content)
+        return parsed if isinstance(parsed, dict) else None
 
     except ImportError:
         logger.warning("openai package not available, using template fallback")

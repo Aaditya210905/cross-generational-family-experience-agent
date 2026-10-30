@@ -8,6 +8,10 @@ from .client import (
     evaluate_constraint_with_llm,
     discover_semantic_bridges,
     get_openai_client,
+    extract_json_from_message,
+    extract_text_from_message,
+    parse_json_text,
+    complete_json,
 )
 
 __all__ = [
@@ -16,5 +20,9 @@ __all__ = [
     "evaluate_constraint_with_llm",
     "discover_semantic_bridges",
     "get_openai_client",
+    "extract_json_from_message",
+    "extract_text_from_message",
+    "parse_json_text",
+    "complete_json",
 ]
 

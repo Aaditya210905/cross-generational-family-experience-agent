@@ -15,6 +15,7 @@ from contracts.models import (
     CandidatePool,
     FamilyMember,
     ScoredCandidate,
+    taste_texts,
 )
 
 
@@ -35,20 +36,18 @@ def build_evidence_packet(
         if not member:
             continue
 
-        # Find which of this member's liked items relate to the candidate
-        member_liked_lower = {item.lower() for item in member.liked_items}
+        liked = taste_texts(member.liked_items)
+        disliked = taste_texts(member.disliked_items)
         candidate_tags_lower = {t.lower() for t in candidate.tags}
 
-        # Direct overlap: member's liked items that appear in tags
         related = []
-        for item in member.liked_items:
+        for item in liked:
             item_words = set(item.lower().replace("-", " ").split())
             if item_words & candidate_tags_lower:
                 related.append(item)
 
-        # Also check entity name similarity
         entity_name_lower = candidate.entity.name.lower()
-        for item in member.liked_items:
+        for item in liked:
             if item.lower() in entity_name_lower or entity_name_lower in item.lower():
                 if item not in related:
                     related.append(item)
@@ -60,7 +59,7 @@ def build_evidence_packet(
             "score": round(detail.score, 2),
             "score_label": _score_label(detail.score),
             "related_liked_items": related[:5],
-            "disliked_items": member.disliked_items[:3],
+            "disliked_items": disliked[:3],
         })
 
     # Constraint summary

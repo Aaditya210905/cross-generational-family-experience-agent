@@ -11,7 +11,7 @@ import uuid
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 # ─── Enums ───────────────────────────────────────────────────────────────────
@@ -87,14 +87,56 @@ class TimeAvailable(str, Enum):
 
 # ─── Core Domain Models ─────────────────────────────────────────────────────
 
+class TasteItem(BaseModel):
+    """A like or dislike, optionally tagged with the preference's own domain."""
+    text: str
+    category: Optional[str] = None
+
+
+def coerce_taste_items(value: Any) -> List[TasteItem]:
+    """Accept plain strings or {text, category} objects from older clients."""
+    if not value:
+        return []
+    items: List[TasteItem] = []
+    for item in value:
+        if isinstance(item, TasteItem):
+            items.append(item)
+        elif isinstance(item, str):
+            text = item.strip()
+            if text:
+                items.append(TasteItem(text=text))
+        elif isinstance(item, dict):
+            text = str(item.get("text") or "").strip()
+            if text:
+                items.append(TasteItem(text=text, category=item.get("category")))
+        else:
+            text = str(getattr(item, "text", item) or "").strip()
+            if text:
+                items.append(TasteItem(
+                    text=text,
+                    category=getattr(item, "category", None),
+                ))
+    return items
+
+
+def taste_texts(items: Optional[List[Any]]) -> List[str]:
+    """Flatten likes/dislikes to display strings regardless of payload shape."""
+    return [item.text for item in coerce_taste_items(items or [])]
+
+
 class FamilyMember(BaseModel):
     """A single family member with their taste profile."""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     nickname: str
     generation: GenerationLabel
     avatar_emoji: str = "👤"
-    liked_items: List[str] = Field(default_factory=list)
-    disliked_items: List[str] = Field(default_factory=list)
+    liked_items: List[TasteItem] = Field(default_factory=list)
+    disliked_items: List[TasteItem] = Field(default_factory=list)
+
+    @field_validator("liked_items", "disliked_items", mode="before")
+    @classmethod
+    def _coerce_taste_fields(cls, value: Any) -> List[TasteItem]:
+        return coerce_taste_items(value)
 
 
 class Preference(BaseModel):
@@ -266,4 +308,4 @@ class FeedbackRequest(BaseModel):
     """Feedback submission from the UI."""
     family_id: str
     feedback: List[Feedback]
-    previous_results: List[str] = Field(default_factory=list)
+    previous_results: Any = Field(default_factory=list)

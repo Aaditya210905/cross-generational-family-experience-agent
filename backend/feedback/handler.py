@@ -148,23 +148,17 @@ class FeedbackHandler:
     ) -> Optional[Dict[str, str]]:
         """Use LLM to convert free text to structured adjustments."""
         try:
-            from openai import AsyncOpenAI
+            from backend.llm import complete_json
 
-            client_kwargs = {"api_key": settings.openai_api_key}
-            if settings.openai_base_url:
-                client_kwargs["base_url"] = settings.openai_base_url
-            client = AsyncOpenAI(**client_kwargs)
-            from backend.llm import extract_json_from_message
-            response = await client.chat.completions.create(
-                model=settings.llm_model,
-                messages=[
+            parsed = await complete_json(
+                [
                     {"role": "system", "content": FREE_TEXT_SYSTEM_PROMPT},
                     {"role": "user", "content": text},
                 ],
                 temperature=0.1,
                 max_tokens=600,
             )
-            return extract_json_from_message(response.choices[0].message)
+            return parsed if isinstance(parsed, dict) else None
         except Exception as e:
             logger.warning(f"LLM free text parsing failed: {e}")
             return None

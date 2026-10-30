@@ -29,6 +29,7 @@ from contracts.models import (
     FamilyMember,
     PersonExplanation,
     ScoredCandidate,
+    taste_texts,
 )
 
 
@@ -291,8 +292,7 @@ class GroupScorer:
         tag_map: Dict[str, Set[str]] = {}
         for member in members:
             tags: Set[str] = set()
-            for item in member.liked_items:
-                # Extract keywords from liked items as pseudo-tags
+            for item in taste_texts(member.liked_items):
                 words = item.lower().replace("-", " ").split()
                 for word in words:
                     cleaned = word.strip(",.!?()[]")

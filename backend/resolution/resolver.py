@@ -181,15 +181,20 @@ class EntityResolver:
         Uses the Qloo search endpoint and scores confidence based on
         how well the top result matches the query.
         """
-        entity_type = (preference.category or default_category).value
+        hinted_type = preference.category.value if preference.category else None
+        fallback_type = default_category.value if default_category else None
+        entity_type = hinted_type
 
         try:
             async with self._semaphore:
+                # Prefer category-aligned search to avoid cross-domain drift
+                search_type = hinted_type or fallback_type
                 results = await self.client.search(
                     query=preference.text,
-                    entity_type=entity_type,
+                    entity_type=search_type,
                     limit=5,
                 )
+                entity_type = search_type
         except QlooAPIError as e:
             logger.error(f"Qloo search failed for '{preference.text}': {e}")
             results = []
@@ -200,7 +205,10 @@ class EntityResolver:
         # use LLM query expansion to find canonical entity titles for Qloo to search
         if (not results or confidence in (ConfidenceLevel.LOW, ConfidenceLevel.UNRESOLVED)) and is_llm_available():
             try:
-                expanded_queries = await expand_preference_for_qloo(preference.text, entity_type)
+                expanded_queries = await expand_preference_for_qloo(
+                    preference.text,
+                    entity_type or fallback_type or "unknown",
+                )
                 for exp_q in expanded_queries:
                     if exp_q.lower() == preference.text.lower():
                         continue

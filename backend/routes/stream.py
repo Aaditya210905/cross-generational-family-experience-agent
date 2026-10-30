@@ -39,7 +39,7 @@ async def stream_progress(family_id: str) -> EventSourceResponse:
     The frontend connects to this endpoint before calling /recommend.
     """
     orchestrator = get_orchestrator()
-    queue = orchestrator.create_progress_queue(family_id)
+    queue = orchestrator.subscribe_progress(family_id)
 
     async def event_generator() -> AsyncGenerator[dict, None]:
         try:
@@ -82,6 +82,6 @@ async def stream_progress(family_id: str) -> EventSourceResponse:
         except asyncio.CancelledError:
             logger.info(f"SSE stream cancelled for {family_id}")
         finally:
-            orchestrator.remove_progress_queue(family_id)
+            orchestrator.unsubscribe_progress(family_id, queue)
 
     return EventSourceResponse(event_generator())

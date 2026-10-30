@@ -13,10 +13,12 @@ Emits ProgressEvents via SSE so the UI shows a live agent trace.
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import json
 import logging
 import time
 from datetime import datetime, timezone
-from typing import Any, AsyncGenerator, Callable, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from backend.config import get_settings
 from backend.constraints.engine import ConstraintEngine
@@ -39,7 +41,8 @@ from contracts.models import (
     RankedResults,
     ResolvedEntity,
     ScoreSource,
-    ScoredCandidate,
+    TasteItem,
+    coerce_taste_items,
 )
 
 logger = logging.getLogger(__name__)
@@ -56,20 +59,33 @@ class PipelineOrchestrator:
 
     def __init__(self):
         self.settings = get_settings()
-        self._progress_callbacks: Dict[str, List[Callable]] = {}
-        self._progress_queues: Dict[str, asyncio.Queue] = {}
+        self._progress_hubs: Dict[str, "_ProgressHub"] = {}
+        self._in_flight: Dict[str, asyncio.Future] = {}
+        self._dedupe_lock = asyncio.Lock()
 
     # ─── Progress Event System ───────────────────────────────────────────
 
+    def subscribe_progress(self, family_id: str) -> asyncio.Queue:
+        """Subscribe to pipeline events, replaying anything already emitted."""
+        hub = self._progress_hubs.get(family_id)
+        if hub is None:
+            hub = _ProgressHub()
+            self._progress_hubs[family_id] = hub
+        return hub.subscribe()
+
+    def unsubscribe_progress(self, family_id: str, queue: asyncio.Queue) -> None:
+        hub = self._progress_hubs.get(family_id)
+        if hub:
+            hub.unsubscribe(queue)
+            if hub.idle:
+                self._progress_hubs.pop(family_id, None)
+
     def create_progress_queue(self, family_id: str) -> asyncio.Queue:
-        """Create a queue for streaming progress events."""
-        queue: asyncio.Queue = asyncio.Queue()
-        self._progress_queues[family_id] = queue
-        return queue
+        """Back-compat alias used by the SSE route."""
+        return self.subscribe_progress(family_id)
 
     def remove_progress_queue(self, family_id: str) -> None:
-        """Remove a progress queue."""
-        self._progress_queues.pop(family_id, None)
+        self._progress_hubs.pop(family_id, None)
 
     async def _emit_progress(
         self,
@@ -90,9 +106,11 @@ class PipelineOrchestrator:
             timestamp=datetime.now(timezone.utc).isoformat(),
         )
 
-        queue = self._progress_queues.get(family_id)
-        if queue:
-            await queue.put(event)
+        hub = self._progress_hubs.get(family_id)
+        if hub is None:
+            hub = _ProgressHub()
+            self._progress_hubs[family_id] = hub
+        await hub.publish(event)
 
         logger.info(f"[{family_id}] {step}: {status} — {message}")
 
@@ -117,6 +135,44 @@ class PipelineOrchestrator:
         5. Constraint filtering (Person B)
         6. Generate explanations (Person B)
         """
+        run_key = self._run_fingerprint(
+            family_id, members, constraints, category, adjustment
+        )
+        async with self._dedupe_lock:
+            existing = self._in_flight.get(run_key)
+            if existing is not None:
+                shared = existing
+            else:
+                shared = None
+                loop = asyncio.get_running_loop()
+                future: asyncio.Future = loop.create_future()
+                self._in_flight[run_key] = future
+
+        if shared is not None:
+            return await shared
+
+        try:
+            result = await self._run_impl(
+                members, constraints, category, family_id, adjustment
+            )
+            if not future.done():
+                future.set_result(result)
+            return result
+        except Exception as exc:
+            if not future.done():
+                future.set_exception(exc)
+            raise
+        finally:
+            self._in_flight.pop(run_key, None)
+
+    async def _run_impl(
+        self,
+        members: List[FamilyMember],
+        constraints: Constraints,
+        category: Category,
+        family_id: str,
+        adjustment: Optional[AdjustmentSet] = None,
+    ) -> RankedResults:
         start_time = time.time()
 
         await self._emit_progress(
@@ -150,7 +206,7 @@ class PipelineOrchestrator:
         )
 
         pool = await self._get_candidate_pool(
-            members, constraints, category, family_id
+            members, constraints, category, family_id, adjustment=adjustment
         )
 
         await self._emit_progress(
@@ -161,6 +217,12 @@ class PipelineOrchestrator:
         )
 
         # ── Step 3: Apply feedback adjustments ──────────────────────────
+        await self._emit_progress(
+            family_id, "adjust", "started",
+            "Checking previous-round feedback for exclusions and diversity weights...",
+            progress=0.42,
+        )
+
         excluded_ids: Set[str] = set()
         scoring_config = ScoringConfig(
             blend_ratio=self.settings.blend_ratio,
@@ -183,6 +245,12 @@ class PipelineOrchestrator:
                 family_id, "adjust", "completed",
                 f"Applied feedback: excluded {len(excluded_ids)} items, "
                 f"diversity threshold: {scoring_config.diversity_threshold:.2f}",
+                progress=0.45,
+            )
+        else:
+            await self._emit_progress(
+                family_id, "adjust", "completed",
+                "No prior feedback this round — ranking with default weights",
                 progress=0.45,
             )
 
@@ -284,6 +352,7 @@ class PipelineOrchestrator:
         constraints: Constraints,
         category: Category,
         family_id: str,
+        adjustment: Optional[AdjustmentSet] = None,
     ) -> Optional[CandidatePool]:
         """Call Person A's real Qloo EntityResolver and RetrievalEngine live."""
         try:
@@ -291,18 +360,21 @@ class PipelineOrchestrator:
             from backend.retrieval.engine import RetrievalEngine
             from backend.models.family import FamilyMember as P_Member, Preference as P_Pref, CategoryType as P_Cat
 
-            cat_val = category.value if hasattr(category, "value") else str(category).lower()
-            if "restaurant" in cat_val:
-                p_cat = P_Cat.RESTAURANTS
-            elif "activit" in cat_val:
-                p_cat = P_Cat.ACTIVITIES
-            else:
-                p_cat = P_Cat.MOVIES
+            rec_cat = _match_category_type(
+                category.value if hasattr(category, "value") else str(category),
+                P_Cat,
+            )
 
             p_members = []
             for m in members:
-                likes = [P_Pref(text=item, category=p_cat, is_dislike=False) for item in m.liked_items]
-                dislikes = [P_Pref(text=item, category=p_cat, is_dislike=True) for item in m.disliked_items]
+                likes = [
+                    _to_person_a_pref(item, is_dislike=False, category_enum=P_Cat)
+                    for item in coerce_taste_items(m.liked_items)
+                ]
+                dislikes = [
+                    _to_person_a_pref(item, is_dislike=True, category_enum=P_Cat)
+                    for item in coerce_taste_items(m.disliked_items)
+                ]
                 p_members.append(P_Member(
                     id=m.id,
                     nickname=m.nickname,
@@ -312,13 +384,17 @@ class PipelineOrchestrator:
                 ))
 
             resolver = EntityResolver()
-            resolved_profile = await resolver.resolve_family(p_members, p_cat)
+            resolved_profile = await resolver.resolve_family(
+                p_members,
+                rec_cat or next(iter(P_Cat)),
+            )
 
             retriever = RetrievalEngine()
             live_pool = await retriever.build_candidate_pool(
                 profile=resolved_profile,
                 category=category.value,
                 location=constraints.location if constraints.location != "at_home" else None,
+                adjustment=_to_retrieval_adjustment(adjustment),
             )
 
             if live_pool and live_pool.candidates:
@@ -367,32 +443,27 @@ class PipelineOrchestrator:
         constraints: Constraints,
         category: Category,
         family_id: str,
+        adjustment: Optional[AdjustmentSet] = None,
     ) -> CandidatePool:
         """
         Get the candidate pool.
         Prefers live Qloo retrieval for custom families; uses rich fixtures for demo families.
         """
-        # If it is a known demo family, use demo fixtures
-        is_demo_id = any(k in family_id for k in ["demo-sharma", "demo-tanaka-rodriguez", "demo-williams"])
-        demo_pool = get_demo_pool(family_id) if is_demo_id else None
+        demo_pool = get_demo_pool(family_id)
 
-        if not demo_pool and not is_demo_id:
-            # 1. Try Live Qloo API
-            live_pool = await self._retrieve_live_qloo_pool(members, constraints, category, family_id)
+        if not demo_pool:
+            live_pool = await self._retrieve_live_qloo_pool(
+                members, constraints, category, family_id, adjustment=adjustment
+            )
             if live_pool and live_pool.candidates:
                 return live_pool
 
-        # Fallback to demo family fixtures if live retrieval returned empty or failed
-        if not demo_pool:
-            nicknames_lower = {m.nickname.lower() for m in members}
-            if {"nani", "priya", "arjun"}.intersection(nicknames_lower):
-                demo_pool = get_demo_pool("demo-sharma")
-            elif {"carlos", "yuki", "sofia"}.intersection(nicknames_lower):
+            # Fallback to standard demo pools by category if live retrieval yielded nothing
+            cat_str = str(category.value if hasattr(category, "value") else category).lower()
+            if "restaurant" in cat_str:
                 demo_pool = get_demo_pool("demo-tanaka-rodriguez")
-            elif {"bob", "mike", "zoe", "sam"}.intersection(nicknames_lower):
+            elif "activit" in cat_str:
                 demo_pool = get_demo_pool("demo-williams")
-            elif category == Category.RESTAURANTS or category == "restaurants":
-                demo_pool = get_demo_pool("demo-tanaka-rodriguez")
             else:
                 demo_pool = get_demo_pool("demo-sharma")
 
@@ -444,6 +515,87 @@ class PipelineOrchestrator:
         """Process feedback and return adjustment set for next round."""
         handler = FeedbackHandler(existing_adjustment)
         return await handler.process_feedback(request)
+
+    def _run_fingerprint(
+        self,
+        family_id: str,
+        members: List[FamilyMember],
+        constraints: Constraints,
+        category: Category,
+        adjustment: Optional[AdjustmentSet],
+    ) -> str:
+        payload = {
+            "family_id": family_id,
+            "category": getattr(category, "value", str(category)),
+            "members": [m.model_dump() for m in members],
+            "constraints": constraints.model_dump() if constraints else {},
+            "adjustment": adjustment.model_dump() if adjustment else None,
+        }
+        raw = json.dumps(payload, sort_keys=True, default=str)
+        return hashlib.sha256(raw.encode()).hexdigest()
+
+
+class _ProgressHub:
+    """Fan-out buffer so SSE clients that connect late still see earlier steps."""
+
+    def __init__(self) -> None:
+        self.history: List[ProgressEvent] = []
+        self._subscribers: List[asyncio.Queue] = []
+
+    @property
+    def idle(self) -> bool:
+        return not self._subscribers
+
+    def subscribe(self) -> asyncio.Queue:
+        queue: asyncio.Queue = asyncio.Queue()
+        for event in self.history:
+            queue.put_nowait(event)
+        self._subscribers.append(queue)
+        return queue
+
+    def unsubscribe(self, queue: asyncio.Queue) -> None:
+        try:
+            self._subscribers.remove(queue)
+        except ValueError:
+            pass
+
+    async def publish(self, event: ProgressEvent) -> None:
+        self.history.append(event)
+        for queue in list(self._subscribers):
+            await queue.put(event)
+
+
+def _match_category_type(raw: Optional[str], enum_cls: Any) -> Optional[Any]:
+    if not raw:
+        return None
+    needle = str(raw).strip().lower()
+    for member in enum_cls:
+        value = str(member.value).lower()
+        if needle == value or needle == member.name.lower():
+            return member
+        if needle.rstrip("s") == value.rstrip("s"):
+            return member
+    return None
+
+
+def _to_person_a_pref(item: TasteItem, is_dislike: bool, category_enum: Any):
+    from backend.models.family import Preference as P_Pref
+
+    mapped = _match_category_type(item.category, category_enum)
+    return P_Pref(text=item.text, category=mapped, is_dislike=is_dislike)
+
+
+def _to_retrieval_adjustment(adjustment: Optional[AdjustmentSet]):
+    if not adjustment:
+        return None
+    from backend.models.common import AdjustmentSet as RetrievalAdjustment
+
+    return RetrievalAdjustment(
+        excluded_entity_ids=list(adjustment.excluded_candidates),
+        additional_seed_entity_ids=list(adjustment.additional_seeds),
+        diversity_penalty_boost=adjustment.diversity_penalty_change,
+        additional_filters=dict(adjustment.filter_changes),
+    )
 
 
 # ─── Singleton ───────────────────────────────────────────────────────────────
