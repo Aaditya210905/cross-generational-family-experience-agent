@@ -211,19 +211,21 @@ export default function WelcomeScreen() {
   };
 
   return (
-    <div className="flex-1 flex flex-col items-center px-4 py-10 md:py-16 relative z-10 max-w-6xl mx-auto w-full">
+    <div className="flex-1 flex flex-col items-center px-4 sm:px-6 lg:px-8 py-10 md:py-16 relative z-10 max-w-[1440px] mx-auto w-full">
       {/* ── Futuristic Hero ────────────────────────────────────────── */}
-      <div className="text-center max-w-3xl mx-auto mb-12">
+      <div className="text-center max-w-4xl mx-auto mb-12">
         {/* Top Floating Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-violet-500/20 via-fuchsia-500/20 to-pink-500/20 border border-violet-400/40 text-violet-300 text-xs font-semibold mb-6 shadow-[0_0_30px_rgba(139,92,246,0.25)]">
-          <span className="w-2 h-2 rounded-full bg-violet-400 animate-pulse shadow-[0_0_8px_#a78bfa]" />
+        <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full bg-gradient-to-r from-violet-500/20 via-fuchsia-500/20 to-pink-500/20 border border-violet-400/40 text-violet-300 text-xs sm:text-sm font-semibold mb-6 shadow-[0_0_30px_rgba(139,92,246,0.25)]">
+          <span className="w-2.5 h-2.5 rounded-full bg-violet-400 animate-pulse shadow-[0_0_8px_#a78bfa]" />
           <span>Cultural AI Taste Intelligence</span>
-          <span className="text-slate-600">•</span>
+          <span className="text-slate-500">•</span>
           <span className="text-fuchsia-300">Qloo Powered</span>
+          <span className="text-slate-500">•</span>
+          <span className="text-cyan-300">Fairness Consensus Engine</span>
         </div>
 
         {/* Main Headline */}
-        <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight mb-6 leading-[1.1]">
+        <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight mb-6 leading-[1.12]">
           Unite Every Generation
           <br />
           <span className="text-gradient">
@@ -232,17 +234,17 @@ export default function WelcomeScreen() {
         </h1>
 
         {/* Subtitle */}
-        <p className="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
-          No more movie arguments or dinner stalemates. Map cultural taste overlaps across all ages — find experiences the whole family genuinely loves.
+        <p className="text-base sm:text-lg md:text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
+          No more movie arguments or dinner stalemates. Map cultural taste overlaps across all ages — discover restaurants, films, and outings the whole family genuinely loves.
         </p>
       </div>
 
       {/* ── Category Selector Bar ──────────────────────────────────── */}
-      <div className="w-full max-w-2xl mb-10 text-center">
-        <p className="text-xs uppercase tracking-widest text-slate-400 font-bold mb-3">
+      <div className="w-full max-w-3xl mb-12 text-center">
+        <p className="text-xs sm:text-sm uppercase tracking-widest text-slate-400 font-bold mb-3.5">
           Select Your Activity Domain
         </p>
-        <div className="grid grid-cols-3 gap-3 p-1.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] backdrop-blur-xl">
+        <div className="grid grid-cols-3 gap-3 p-2 rounded-2xl bg-white/[0.04] border border-white/[0.08] backdrop-blur-xl shadow-xl">
           {(Object.entries(CATEGORY_META) as [CategoryType, typeof CATEGORY_META["movies"]][]).map(
             ([key, meta]) => {
               const isSelected = state.category === key;
@@ -250,14 +252,14 @@ export default function WelcomeScreen() {
                 <button
                   key={key}
                   onClick={() => dispatch({ type: "SET_CATEGORY", category: key })}
-                  className={`flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-3 rounded-xl transition-all duration-300 ${
+                  className={`flex flex-col sm:flex-row items-center justify-center gap-2.5 py-3.5 px-4 rounded-xl transition-all duration-300 cursor-pointer ${
                     isSelected
-                      ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold shadow-[0_0_20px_rgba(99,102,241,0.5)] border border-indigo-400/40"
-                      : "hover:bg-white/[0.05] text-slate-400 hover:text-white"
+                      ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-bold shadow-[0_0_24px_rgba(139,92,246,0.5)] border border-violet-400/50 scale-[1.02]"
+                      : "hover:bg-white/[0.06] text-slate-300 hover:text-white"
                   }`}
                 >
-                  <span className="text-xl">{meta.emoji}</span>
-                  <span className="text-xs sm:text-sm font-semibold">{meta.label}</span>
+                  <span className="text-2xl">{meta.emoji}</span>
+                  <span className="text-sm sm:text-base font-semibold">{meta.label}</span>
                 </button>
               );
             },
@@ -269,64 +271,64 @@ export default function WelcomeScreen() {
       <div className="flex flex-col sm:flex-row items-center gap-4 mb-16">
         <button
           onClick={nextStep}
-          className="btn-primary text-base px-8 py-4 rounded-xl shadow-[0_0_30px_rgba(99,102,241,0.5)] flex items-center gap-3 hover:scale-105 transition-all"
+          className="btn-primary text-base sm:text-lg px-8 sm:px-10 py-4 rounded-2xl shadow-[0_0_30px_rgba(139,92,246,0.5)] flex items-center gap-3 hover:scale-105 transition-all cursor-pointer font-bold"
         >
           <span>✨ Build Custom Family Profile</span>
-          <span className="text-lg">→</span>
+          <span className="text-xl">→</span>
         </button>
       </div>
 
       {/* ── Divider with Neon Accent ────────────────────────────────── */}
-      <div className="w-full max-w-4xl flex items-center gap-4 mb-8">
-        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-        <span className="text-xs uppercase tracking-widest text-slate-400 font-bold px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.08]">
+      <div className="w-full max-w-5xl flex items-center gap-4 mb-10">
+        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+        <span className="text-xs sm:text-sm uppercase tracking-widest text-slate-300 font-bold px-4 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.1] shadow-sm">
           ⚡ Or Explore Pre-Engineered Demographics
         </span>
-        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
       </div>
 
       {/* ── Bento Grid: Demo Family Dossiers ───────────────────────── */}
-      <div className="w-full max-w-5xl mb-16">
+      <div className="w-full max-w-[1440px] mb-16">
         {fetchError && (
-          <p className="text-center text-amber-400 text-xs mb-4">{fetchError}</p>
+          <p className="text-center text-amber-400 text-sm mb-4">{fetchError}</p>
         )}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {demos.map((demo) => (
             <div
               key={demo.family_id}
-              className="demo-card group flex flex-col justify-between"
+              className="demo-card group flex flex-col justify-between p-6 sm:p-7 border border-violet-500/20 bg-[rgba(16,20,36,0.85)] hover:border-violet-400/60 transition-all rounded-2xl"
             >
               <div>
                 {/* Header Badge */}
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/25">
-                    {demo.category === "movies" ? "🎬 Movies" : demo.category === "restaurants" ? "🍽️ Dining" : "🎯 Outing"}
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/30">
+                    {demo.category === "movies" ? "🎬 Movies & Shows" : demo.category === "restaurants" ? "🍽️ Dining" : "🎯 Outings"}
                   </span>
-                  <span className="text-xs text-slate-400 font-mono">
+                  <span className="text-xs sm:text-sm text-slate-400 font-mono font-medium">
                     {demo.member_count} Members
                   </span>
                 </div>
 
                 {/* Title */}
-                <h3 className="font-extrabold text-base text-white mb-2 group-hover:text-indigo-300 transition-colors">
+                <h3 className="font-extrabold text-lg sm:text-xl text-white mb-2.5 group-hover:text-violet-300 transition-colors">
                   {demo.label}
                 </h3>
 
                 {/* Description */}
-                <p className="text-xs text-slate-400 mb-4 leading-relaxed line-clamp-3">
+                <p className="text-sm text-slate-300 mb-5 leading-relaxed">
                   {demo.description}
                 </p>
 
                 {/* Member Avatars Stack */}
                 {demo.members && demo.members.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-5">
+                  <div className="flex flex-wrap gap-2 mb-6">
                     {demo.members.map((m) => (
                       <span
                         key={m.nickname}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.05] text-[11px] text-slate-300 border border-white/[0.08]"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.06] text-xs sm:text-sm text-slate-200 border border-white/[0.1]"
                       >
-                        <span>{m.avatar_emoji || "👤"}</span>
-                        <span className="font-medium">{m.nickname}</span>
+                        <span className="text-base">{m.avatar_emoji || "👤"}</span>
+                        <span className="font-semibold">{m.nickname}</span>
                       </span>
                     ))}
                   </div>
@@ -337,7 +339,7 @@ export default function WelcomeScreen() {
               <button
                 onClick={() => handleLoadDemo(demo.family_id)}
                 disabled={loadingDemo !== null}
-                className="w-full py-2.5 px-4 rounded-xl bg-white/[0.06] hover:bg-indigo-600/30 group-hover:border-indigo-500/40 border border-white/[0.08] text-xs font-bold text-indigo-200 transition-all flex items-center justify-center gap-2"
+                className="w-full py-3.5 px-4 rounded-xl bg-violet-600/20 hover:bg-violet-600/40 group-hover:border-violet-400/50 border border-violet-500/30 text-sm font-bold text-violet-200 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 {loadingDemo === demo.family_id ? (
                   <span className="animate-pulse">Loading AI Profile...</span>
@@ -354,14 +356,14 @@ export default function WelcomeScreen() {
       </div>
 
       {/* ── Holographic Feature Cards ───────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl w-full mb-12">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-[1440px] w-full mb-16">
         {[
           {
             icon: "🧠",
             title: "Qloo Cultural Vectors",
             desc: "Understands high-dimensional taste connections across genres, eras, and cultures with zero cold-start delay.",
-            gradient: "from-indigo-500/10 to-purple-500/5",
-            accent: "text-indigo-400",
+            gradient: "from-violet-500/10 to-purple-500/5",
+            accent: "text-violet-400",
           },
           {
             icon: "⚖️",
@@ -380,13 +382,13 @@ export default function WelcomeScreen() {
         ].map((feature) => (
           <div
             key={feature.title}
-            className={`feature-card bg-gradient-to-br ${feature.gradient}`}
+            className={`feature-card p-6 sm:p-7 rounded-2xl bg-gradient-to-br ${feature.gradient} border border-white/10`}
           >
-            <div className="text-3xl mb-3.5">{feature.icon}</div>
-            <h3 className={`font-bold text-sm mb-2 ${feature.accent}`}>
+            <div className="text-4xl mb-4">{feature.icon}</div>
+            <h3 className={`font-bold text-lg mb-2 ${feature.accent}`}>
               {feature.title}
             </h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-sm text-slate-300 leading-relaxed">
               {feature.desc}
             </p>
           </div>
@@ -394,9 +396,9 @@ export default function WelcomeScreen() {
       </div>
 
       {/* ── Footer ──────────────────────────────────────────────────── */}
-      <div className="text-center text-xs text-slate-500 font-medium">
-        Powered by <span className="text-indigo-400 font-semibold">Qloo API</span> &amp;{" "}
-        <span className="text-purple-400 font-semibold">Groq AI Acceleration</span>
+      <div className="text-center text-sm text-slate-400 font-medium pb-8">
+        Powered by <span className="text-violet-400 font-semibold">Qloo Cultural Intelligence API</span> &amp;{" "}
+        <span className="text-fuchsia-400 font-semibold">Groq AI Acceleration</span>
       </div>
     </div>
   );
