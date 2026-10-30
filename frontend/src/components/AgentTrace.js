@@ -61,34 +61,34 @@ export default function AgentTrace({ events, isRunning }) {
   return (
     <div className="trace-panel">
       {/* Header */}
-      <div className="trace-header">
-        <div className="flex items-center gap-2.5">
-          <span className="text-xl">🤖</span>
+      <div className="trace-header p-4 sm:p-5">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">🤖</span>
           <div>
-            <h3 className="font-extrabold text-sm text-white">
-              Autonomous Agent Pipeline
+            <h3 className="font-extrabold text-base text-white">
+              Autonomous Agent Consensus Pipeline
             </h3>
-            <p className="text-[11px] text-slate-400 font-mono">
-              Live Qloo &amp; LLM Orchestrator Trace
+            <p className="text-xs text-slate-300 font-mono">
+              Live Qloo Cultural Vectors &amp; Fairness Multi-Agent Trace
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           {isRunning && (
-            <span className="badge badge--source flex items-center gap-1.5 animate-pulse">
-              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+            <span className="badge badge--source flex items-center gap-2 animate-pulse text-xs font-semibold">
+              <span className="w-2 h-2 rounded-full bg-violet-400" />
               <span>Synthesizing...</span>
             </span>
           )}
           {!isRunning && events.length > 0 && (
-            <span className="badge badge--pass">Consensus Verified</span>
+            <span className="badge badge--pass text-xs font-semibold">Consensus Verified</span>
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-white/[0.04] border border-white/10 cursor-pointer ml-1"
+            className="text-xs sm:text-sm text-slate-300 hover:text-white px-3 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] border border-white/10 cursor-pointer ml-1 transition-all"
           >
-            {collapsed ? 'Expand Log' : 'Collapse'}
+            {collapsed ? 'Expand Log' : 'Collapse Log'}
           </button>
         </div>
       </div>
@@ -103,7 +103,7 @@ export default function AgentTrace({ events, isRunning }) {
 
       {/* Steps List */}
       {!collapsed && (
-        <div className="trace-steps">
+        <div className="trace-steps p-4 sm:p-6 space-y-3">
           {PIPELINE_STEPS.map((step, idx) => {
             const state = getStepState(step.key, idx);
             const info = stepStatus[step.key];
@@ -113,20 +113,20 @@ export default function AgentTrace({ events, isRunning }) {
                 key={step.key}
                 className={`trace-step trace-step--${state}`}
               >
-                <div className="trace-step__icon">
+                <div className="trace-step__icon text-sm">
                   {getStatusIcon(state)}
                 </div>
                 <div className="trace-step__content">
                   <div className="flex items-center justify-between">
-                    <span className="trace-step__title flex items-center gap-1.5 font-bold">
+                    <span className="trace-step__title flex items-center gap-2 font-bold text-sm sm:text-base">
                       <span>{step.icon}</span>
                       <span>{step.label}</span>
                     </span>
-                    <span className="text-[10px] uppercase font-mono tracking-wider text-slate-500">
+                    <span className="text-xs uppercase font-mono tracking-wider text-slate-400 font-semibold">
                       {state}
                     </span>
                   </div>
-                  <p className="trace-step__message">
+                  <p className="trace-step__message text-xs sm:text-sm text-slate-300 mt-1 leading-relaxed">
                     {info?.message || step.desc}
                   </p>
                 </div>

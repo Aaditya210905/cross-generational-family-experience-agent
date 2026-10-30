@@ -1,9 +1,9 @@
 /**
  * FusionAI — Result Card Component
  * 
- * Futuristic recommendation card with:
+ * Modern recommendation card with:
  * - Score ring + glowing top-pick badges
- * - Consensus group explanation
+ * - Consensus group explanation with standard typography
  * - Per-person match bars with avatars
  * - Expandable reasoning breakdown
  * - Constraint status badges & confidence notes
@@ -16,9 +16,9 @@ import ScoreRing from './ScoreRing';
 import MatchBar from './MatchBar';
 
 const DATA_SOURCE_LABELS = {
-  live_qloo: { emoji: '🟢', label: 'Live Qloo' },
-  cached_qloo: { emoji: '🟡', label: 'Cached Qloo' },
-  fallback: { emoji: '🔵', label: 'Synthesized' },
+  live_qloo: { emoji: '🟢', label: 'Live Qloo Engine' },
+  cached_qloo: { emoji: '🟡', label: 'Cached Intelligence' },
+  fallback: { emoji: '🟣', label: 'Synthesized Consensus' },
 };
 
 const CONSTRAINT_BADGE = {
@@ -64,33 +64,33 @@ export default function ResultCard({
 
   return (
     <div
-      className={`result-card ${isTopPick ? 'border-indigo-500/50 shadow-[0_0_35px_rgba(99,102,241,0.25)]' : ''}`}
+      className={`result-card ${isTopPick ? 'border-violet-400/60 shadow-[0_0_40px_rgba(139,92,246,0.3)] bg-gradient-to-br from-violet-950/20 via-[#0d0e1a] to-[#0a0a14]' : ''}`}
       style={{ animationDelay: `${rank * 0.08}s` }}
       id={`result-${entity.qloo_id}`}
     >
       {/* Top Banner for #1 Pick */}
       {isTopPick && (
-        <div className="absolute top-0 right-0 bg-gradient-to-l from-indigo-500 to-purple-600 text-[10px] uppercase tracking-widest font-black text-white px-4 py-1 rounded-bl-xl shadow-md flex items-center gap-1.5">
+        <div className="absolute top-0 right-0 bg-gradient-to-l from-violet-600 via-fuchsia-600 to-pink-600 text-xs uppercase tracking-widest font-black text-white px-5 py-1.5 rounded-bl-2xl shadow-lg flex items-center gap-2">
           <span>👑 #1 Family Consensus</span>
         </div>
       )}
 
       {/* ── Top Section: Score + Info ────────────────────────── */}
       <div className="result-card__top">
-        <div className="result-card__score-area">
-          <ScoreRing score={group_score} size={76} />
-          <span className="text-[11px] font-bold text-slate-400 mt-1 uppercase tracking-wider">
+        <div className="result-card__score-area flex flex-col items-center">
+          <ScoreRing score={group_score} size={88} />
+          <span className="text-xs font-bold text-slate-300 mt-2 uppercase tracking-wider">
             Consensus
           </span>
         </div>
 
         <div className="result-card__info">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-indigo-400 font-mono">
-              Pick #{rank + 1}
+          <div className="flex items-center gap-2.5 mb-2">
+            <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-violet-300 font-mono">
+              Recommendation #{rank + 1}
             </span>
             <span className="text-slate-600">•</span>
-            <span className="badge badge--source">
+            <span className="badge badge--source text-xs font-semibold">
               {source.emoji} {source.label}
             </span>
           </div>
@@ -99,27 +99,27 @@ export default function ResultCard({
 
           <div className="result-card__meta">
             {entity.type && (
-              <span className="badge badge--source capitalize">
+              <span className="badge badge--source capitalize text-xs">
                 {entity.type}
               </span>
             )}
 
             {metadata.year && (
-              <span className="badge badge--source">📅 {metadata.year}</span>
+              <span className="badge badge--source text-xs">📅 {metadata.year}</span>
             )}
 
             {metadata.runtime_min && (
-              <span className="badge badge--source">⏱️ {metadata.runtime_min}m</span>
+              <span className="badge badge--source text-xs">⏱️ {metadata.runtime_min} mins</span>
             )}
 
             {metadata.price_level && (
-              <span className="badge badge--source">
+              <span className="badge badge--source text-xs">
                 {'💲'.repeat(metadata.price_level)}
               </span>
             )}
 
             {bridge_themes.map((theme) => (
-              <span key={theme} className="badge badge--bridge">
+              <span key={theme} className="badge badge--bridge text-xs font-semibold">
                 🌉 {theme.replace(/_/g, ' ')}
               </span>
             ))}
@@ -129,18 +129,23 @@ export default function ResultCard({
 
       {/* ── Group Explanation ─────────────────────────────────── */}
       {group_explanation && (
-        <div className="result-card__explanation">
-          <div className="flex items-start gap-2">
-            <span className="text-base text-indigo-400">✨</span>
-            <span className="leading-relaxed">{group_explanation}</span>
+        <div className="mt-5 p-4 rounded-xl bg-violet-500/[0.07] border border-violet-500/20 text-slate-200">
+          <div className="flex items-start gap-3">
+            <span className="text-lg text-violet-400 mt-0.5">✨</span>
+            <span className="leading-relaxed text-sm sm:text-base font-medium">
+              {group_explanation}
+            </span>
           </div>
         </div>
       )}
 
       {/* ── Per-Person Match Bars ─────────────────────────────── */}
       <div className="result-card__members">
-        <div className="result-card__members-title">Cohort Harmony Breakdown</div>
-        <div className="space-y-1.5">
+        <div className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-300 mb-3 flex items-center justify-between">
+          <span>Cohort Harmony Breakdown</span>
+          <span className="text-xs text-slate-400 font-normal">Fairness-weighted individual affinity</span>
+        </div>
+        <div className="space-y-2">
           {per_person_details.map((person) => (
             <MatchBar
               key={person.member_id}
@@ -155,7 +160,8 @@ export default function ResultCard({
 
       {/* ── Expand/Collapse Per-Person Reasons ────────────────── */}
       <button
-        className="result-card__expand-trigger group"
+        type="button"
+        className="result-card__expand-trigger group cursor-pointer pt-3"
         onClick={() => setExpanded(!expanded)}
         aria-expanded={expanded}
       >
@@ -165,17 +171,17 @@ export default function ResultCard({
             transition: 'transform 0.2s',
             display: 'inline-block',
           }}
-          className="text-indigo-400 group-hover:scale-125"
+          className="text-violet-400 group-hover:scale-125 text-sm"
         >
           ▶
         </span>
-        <span className="group-hover:text-white transition-colors">
-          {expanded ? 'Hide individual member breakdown' : 'Why each family member might love this'}
+        <span className="group-hover:text-white transition-colors text-sm font-semibold">
+          {expanded ? 'Hide individual member breakdown' : 'View why each family member will love this recommendation'}
         </span>
       </button>
 
       <div className={`result-card__expanded ${expanded ? 'result-card__expanded--open' : ''}`}>
-        <div className="space-y-2 mt-2">
+        <div className="space-y-3 mt-3">
           {per_person_details.map((person) => (
             <div key={person.member_id} className="result-card__person-reason">
               <div className="result-card__person-header">
@@ -185,17 +191,17 @@ export default function ResultCard({
                 <span className="result-card__person-name">
                   {person.nickname}
                 </span>
-                <span className="badge badge--source ml-auto font-mono text-indigo-300">
+                <span className="badge badge--source ml-auto font-mono text-violet-300 text-xs font-bold">
                   {Math.round(person.score * 100)}% match
                 </span>
               </div>
               <p className="result-card__person-text">{person.reason}</p>
               {person.related_liked_items?.length > 0 && (
-                <div className="flex gap-1 mt-2 flex-wrap">
+                <div className="flex gap-1.5 mt-2.5 flex-wrap">
                   {person.related_liked_items.map((item) => (
                     <span
                       key={item}
-                      className="badge badge--bridge text-[10px]"
+                      className="badge badge--bridge text-xs"
                     >
                       Linked to: {item.replace(/_/g, ' ')}
                     </span>
@@ -208,13 +214,15 @@ export default function ResultCard({
 
         {/* Constraint badges in expanded view */}
         {visibleConstraints.length > 0 && (
-          <div className="mt-4 pt-3 border-t border-white/[0.08]">
-            <div className="result-card__members-title">Constraint Verification</div>
+          <div className="mt-5 pt-4 border-t border-white/[0.08]">
+            <div className="text-xs uppercase tracking-wider font-bold text-slate-400 mb-2">
+              Constraint Verification
+            </div>
             <div className="result-card__constraints">
               {visibleConstraints.map((c, i) => (
                 <span
                   key={i}
-                  className={`badge ${CONSTRAINT_BADGE[c.status]}`}
+                  className={`badge ${CONSTRAINT_BADGE[c.status]} text-xs`}
                   title={c.message}
                 >
                   {CONSTRAINT_ICON[c.status]} {c.constraint_name}
@@ -227,15 +235,15 @@ export default function ResultCard({
 
       {/* ── Confidence Note ───────────────────────────────────── */}
       {confidence_note && (
-        <div className="result-card__confidence">
+        <div className="result-card__confidence text-xs sm:text-sm text-slate-400">
           ℹ️ {confidence_note}
         </div>
       )}
 
       {/* ── Feedback Actions ──────────────────────────────────── */}
-      <div className="result-card__actions">
+      <div className="result-card__actions flex flex-wrap gap-3">
         <button
-          className={`btn btn-sm ${feedbackGiven === 'like' ? 'btn-success' : 'btn-secondary'}`}
+          className={`btn ${feedbackGiven === 'like' ? 'btn-success' : 'btn-secondary'} px-5 py-2.5 text-xs sm:text-sm font-bold rounded-xl cursor-pointer`}
           onClick={() => onFeedback?.(entity.qloo_id, entity.name, 'like')}
           disabled={!!feedbackGiven}
           title="We love this suggestion"
@@ -243,7 +251,7 @@ export default function ResultCard({
           👍 We Love This
         </button>
         <button
-          className={`btn btn-sm ${feedbackGiven === 'dislike' ? 'btn-danger' : 'btn-secondary'}`}
+          className={`btn ${feedbackGiven === 'dislike' ? 'btn-danger' : 'btn-secondary'} px-5 py-2.5 text-xs sm:text-sm font-bold rounded-xl cursor-pointer`}
           onClick={() => onFeedback?.(entity.qloo_id, entity.name, 'dislike')}
           disabled={!!feedbackGiven}
           title="Not for us"
@@ -251,7 +259,7 @@ export default function ResultCard({
           👎 Not For Us
         </button>
         <button
-          className={`btn btn-sm ${feedbackGiven === 'too_similar' ? 'btn-primary' : 'btn-secondary'}`}
+          className={`btn ${feedbackGiven === 'too_similar' ? 'btn-primary' : 'btn-secondary'} px-5 py-2.5 text-xs sm:text-sm font-bold rounded-xl cursor-pointer`}
           onClick={() => onFeedback?.(entity.qloo_id, entity.name, 'too_similar')}
           disabled={!!feedbackGiven}
           title="Give us more variety"

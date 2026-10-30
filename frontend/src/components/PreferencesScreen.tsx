@@ -1,10 +1,9 @@
 /**
  * FamilyFusion AI — Preferences Screen (Step 2)
  *
- * Futuristic preference intake interface:
- * - Segmented member tabs with avatar badges and completion status
- * - Dual liked/disliked cards with quick suggestion pills
- * - Live cohort taste matrix overview
+ * Modern expansive 2-column dashboard layout:
+ * - Left: Member Navigator with completion checkmarks & Cohort Readiness Summary
+ * - Right: Active Member Taste Intake (Likes & Dealbreakers) with generous inputs and suggestions
  */
 
 "use client";
@@ -23,10 +22,10 @@ export default function PreferencesScreen() {
   const member = state.members[activeMember] || state.members[0];
   if (!member) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-        <p className="text-slate-400 mb-4">Please add family members first.</p>
-        <button onClick={prevStep} className="btn-primary text-sm">
-          ← Back to Family
+      <div className="flex-1 flex flex-col items-center justify-center p-12 text-center max-w-[1440px] mx-auto w-full">
+        <p className="text-base text-slate-300 mb-6">Please add family members first.</p>
+        <button onClick={prevStep} className="btn-primary text-sm px-6 py-3 rounded-xl cursor-pointer">
+          ← Back to Family Cohort
         </button>
       </div>
     );
@@ -35,8 +34,8 @@ export default function PreferencesScreen() {
   const meta = GENERATION_META[member.generation] || {
     label: "Family Member",
     emoji: "👤",
-    color: "text-indigo-400",
-    bgColor: "bg-indigo-500/20",
+    color: "text-violet-400",
+    bgColor: "bg-violet-500/20",
   };
 
   const addPreference = (text: string, isDislike: boolean) => {
@@ -87,282 +86,342 @@ export default function PreferencesScreen() {
   // Suggestions per category
   const suggestions: Record<CategoryType, { likes: string[]; dislikes: string[] }> = {
     movies: {
-      likes: ["Spirited Away", "The Godfather", "Spider-Verse", "Bollywood classics", "Studio Ghibli", "Marvel Cinematic", "Inception", "Coco"],
-      dislikes: ["Horror & gore", "Excessive violence", "Very long 3hr+ films", "Black & white"],
+      likes: ["Spirited Away", "The Godfather", "Spider-Verse", "Bollywood classics", "Studio Ghibli", "Marvel Cinematic", "Inception", "Coco", "Back to the Future", "Jurassic Park"],
+      dislikes: ["Horror & gore", "Excessive violence", "Very long 3hr+ films", "Black & white", "Jump scares"],
     },
     restaurants: {
-      likes: ["Italian handmade pasta", "Fresh Sushi", "Smoked BBQ", "Authentic Indian curry", "Thai street food", "Mexican Tacos", "Mediterranean tapas"],
-      dislikes: ["Extreme spicy peppers", "Greasy fast food", "Raw seafood", "Noisy club dining"],
+      likes: ["Italian handmade pasta", "Fresh Sushi & Sashimi", "Smoked Texas BBQ", "Authentic Indian Curry", "Thai Street Food", "Mexican Street Tacos", "Mediterranean Tapas", "Wood-fired Pizza"],
+      dislikes: ["Extreme spicy peppers", "Greasy fast food", "Raw seafood", "Noisy club dining", "Overcooked steak"],
     },
     activities: {
-      likes: ["Scenic hiking", "Board game cafe", "Art & science museum", "Escape room challenge", "Beach sunset", "Miniature golf", "Botanical garden"],
-      dislikes: ["Extreme heights", "Loud concerts", "Strenuous climbing", "Stuffy enclosed spaces"],
+      likes: ["Scenic nature hiking", "Board game cafe", "Art & science museum", "Escape room challenge", "Sunset beach walk", "Miniature golf", "Botanical garden tour", "Live acoustic music"],
+      dislikes: ["Extreme heights", "Loud concerts", "Strenuous climbing", "Stuffy enclosed spaces", "Long queues"],
     },
   };
 
   const currentSuggestions = suggestions[state.category] || suggestions.movies;
 
+  const totalLikes = state.members.reduce((acc, m) => acc + m.liked_items.length, 0);
+  const totalDislikes = state.members.reduce((acc, m) => acc + m.disliked_items.length, 0);
+
   return (
-    <div className="flex-1 flex flex-col items-center px-4 py-8 pb-20 relative z-10 max-w-4xl mx-auto w-full">
-      {/* ── Header ───────────────────────────────────────────────── */}
-      <div className="text-center mb-6">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs font-semibold mb-3">
-          <span>Step 2 • Taste Signals</span>
-        </div>
-        <h2 className="text-3xl font-extrabold tracking-tight text-white mb-2">
-          ❤️ What Does Everyone Enjoy?
-        </h2>
-        <p className="text-sm text-slate-400 max-w-lg mx-auto">
-          Add specific movies, cuisines, or activities each person loves. Qloo converts these into taste vector affinities.
-        </p>
-      </div>
-
-      {/* ── Member Segmented Selector ─────────────────────────────── */}
-      <div className="w-full flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-none justify-start sm:justify-center">
-        {state.members.map((m, idx) => {
-          const mMeta = GENERATION_META[m.generation] || { emoji: "👤" };
-          const hasPrefs = m.liked_items.length > 0;
-          const isSelected = idx === activeMember;
-
-          return (
-            <button
-              key={m.id}
-              onClick={() => setActiveMember(idx)}
-              className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl whitespace-nowrap text-xs sm:text-sm font-bold transition-all border cursor-pointer ${
-                isSelected
-                  ? "bg-gradient-to-r from-indigo-600/30 to-purple-600/30 border-indigo-400 text-white shadow-[0_0_20px_rgba(99,102,241,0.35)] scale-105"
-                  : hasPrefs
-                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/15"
-                    : "bg-white/[0.04] border-white/10 text-slate-400 hover:text-white hover:bg-white/[0.08]"
-              }`}
-            >
-              <span className="text-lg">{mMeta.emoji}</span>
-              <span>{m.nickname}</span>
-              {hasPrefs ? (
-                <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px]">
-                  ✓
-                </span>
-              ) : (
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* ── Active Member Intake Card ─────────────────────────────── */}
-      <div className="glass-card p-6 md:p-8 mb-6 w-full border border-indigo-500/25 shadow-2xl">
-        {/* Member Profile Banner */}
-        <div className="flex items-center gap-4 mb-7 pb-5 border-b border-white/[0.08]">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 border border-white/20 flex items-center justify-center text-3xl shadow-inner">
-            {meta.emoji}
+    <div className="flex-1 flex flex-col px-4 sm:px-6 lg:px-8 py-8 md:py-10 max-w-[1440px] mx-auto w-full relative z-10">
+      {/* ── Page Header ────────────────────────────────────────────── */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 pb-6 border-b border-white/[0.08]">
+        <div>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-fuchsia-500/15 border border-fuchsia-500/30 text-fuchsia-300 text-xs sm:text-sm font-semibold mb-3">
+            <span>Step 2 • Taste Signals &amp; Cultural DNA</span>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-extrabold text-xl text-white">{member.nickname}</h3>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 font-semibold border border-indigo-500/20">
-                {meta.label}
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white mb-2">
+            ❤️ What Does Everyone Enjoy?
+          </h2>
+          <p className="text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed">
+            Specify favorites and dealbreakers for each family member. Qloo projects these inputs into multi-dimensional cultural vectors to identify genuine consensus.
+          </p>
+        </div>
+
+        <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-white/[0.04] border border-white/[0.08] text-sm self-start md:self-auto">
+          <span className="text-slate-400">Total Signals Logged:</span>
+          <span className="font-bold text-emerald-300">{totalLikes} Likes</span>
+          <span className="text-slate-600">•</span>
+          <span className="font-bold text-rose-300">{totalDislikes} Dislikes</span>
+        </div>
+      </div>
+
+      {/* ── 2-Column Expansive Grid ─────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full mb-10 items-start">
+        {/* ── Left Column: Member Navigator & Cohort Status (4 Cols) ─── */}
+        <div className="lg:col-span-4 flex flex-col gap-6">
+          <div className="glass-card p-5 sm:p-6 border border-violet-500/25 shadow-2xl rounded-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-violet-300 flex items-center gap-2">
+                <span>👥</span>
+                <span>Select Member</span>
+              </span>
+              <span className="text-xs text-slate-400 font-mono">
+                {state.members.filter((m) => m.liked_items.length > 0).length}/{state.members.length} ready
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-1">
-              Currently has <span className="text-emerald-400 font-semibold">{member.liked_items.length} likes</span> and{" "}
-              <span className="text-rose-400 font-semibold">{member.disliked_items.length} dislikes</span>
+
+            {/* Member Tabs List */}
+            <div className="flex flex-col gap-3">
+              {state.members.map((m, idx) => {
+                const mMeta = GENERATION_META[m.generation] || { emoji: "👤", label: "Member" };
+                const hasLikes = m.liked_items.length > 0;
+                const isSelected = idx === activeMember;
+
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setActiveMember(idx)}
+                    className={`flex items-center justify-between p-3.5 rounded-xl transition-all border text-left cursor-pointer ${
+                      isSelected
+                        ? "bg-gradient-to-r from-violet-600/35 to-fuchsia-600/25 border-violet-400 shadow-[0_0_20px_rgba(139,92,246,0.25)] scale-[1.01]"
+                        : hasLikes
+                          ? "bg-emerald-500/[0.05] border-emerald-500/30 hover:bg-emerald-500/[0.08]"
+                          : "bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.06] text-slate-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-11 h-11 rounded-xl bg-white/[0.06] border border-white/10 flex items-center justify-center text-xl flex-shrink-0">
+                        {mMeta.emoji}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-bold text-sm sm:text-base text-white truncate">
+                          {m.nickname}
+                        </div>
+                        <div className="text-xs text-slate-400">
+                          {mMeta.label}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                      {hasLikes ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30">
+                          <span>✓</span>
+                          <span>{m.liked_items.length} likes</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-xs font-semibold animate-pulse">
+                          <span>Needs like</span>
+                        </span>
+                      )}
+                      {m.disliked_items.length > 0 && (
+                        <span className="text-[11px] text-rose-300/80 font-medium">
+                          {m.disliked_items.length} dislikes
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Taste Intelligence Guidance Card */}
+          <div className="glass-card p-5 border border-white/[0.08] rounded-2xl bg-white/[0.02]">
+            <h4 className="text-xs sm:text-sm font-bold text-slate-200 mb-2 flex items-center gap-2">
+              <span>💡</span>
+              <span>Pro Tip for Better Matches</span>
+            </h4>
+            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+              Adding 2-3 specific titles or cuisines per person yields 4x higher recommendation precision than broad generic genres.
             </p>
           </div>
         </div>
 
-        {/* ── Section: Likes ────────────────────────────────────────── */}
-        <div className="mb-8 p-5 rounded-2xl bg-emerald-500/[0.04] border border-emerald-500/20">
-          <label className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-emerald-400 mb-3">
-            <span className="flex items-center gap-2">
-              <span>👍 Likes &amp; Favorites</span>
-              <span className="text-[10px] text-emerald-300/70 font-normal lowercase">(required at least 1)</span>
-            </span>
-            <span className="text-emerald-400 text-xs font-mono">{member.liked_items.length} items</span>
-          </label>
-
-          {/* Input & Add */}
-          <div className="flex gap-2.5 mb-3.5">
-            <input
-              type="text"
-              placeholder={`Add something ${member.nickname} loves (e.g. "${currentSuggestions.likes[0]}")`}
-              value={likeInput}
-              onChange={(e) => setLikeInput(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, false)}
-              className="wizard-input flex-1"
-            />
-            <button
-              onClick={() => addPreference(likeInput, false)}
-              disabled={!likeInput.trim()}
-              className="btn-success px-5 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap disabled:opacity-40"
-            >
-              + Add Like
-            </button>
-          </div>
-
-          {/* Liked Chips */}
-          <div className="flex flex-wrap gap-2 mb-4 min-h-[32px] items-center">
-            {member.liked_items.map((pref, i) => (
-              <span
-                key={i}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-200 text-xs font-medium shadow-sm"
-              >
-                <span>{pref.text}</span>
-                <button
-                  onClick={() => removePreference(i, false)}
-                  className="text-emerald-400/60 hover:text-rose-400 hover:scale-125 transition-all text-xs font-bold ml-1 cursor-pointer"
-                  title="Remove"
-                >
-                  ✕
-                </button>
-              </span>
-            ))}
-            {member.liked_items.length === 0 && (
-              <span className="text-xs text-slate-500 italic">
-                No likes added yet. Click suggestions below or type your own!
-              </span>
-            )}
-          </div>
-
-          {/* Quick Suggestions */}
-          <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-emerald-500/10">
-            <span className="text-[11px] font-semibold text-slate-400">Quick Suggestions:</span>
-            {currentSuggestions.likes
-              .filter((s) => !member.liked_items.some((l) => l.text.toLowerCase() === s.toLowerCase()))
-              .slice(0, 5)
-              .map((s) => (
-                <button
-                  key={s}
-                  onClick={() => addPreference(s, false)}
-                  className="text-xs px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/10 text-slate-300 hover:text-emerald-300 hover:border-emerald-500/40 hover:bg-emerald-500/10 transition-all cursor-pointer"
-                >
-                  + {s}
-                </button>
-              ))}
-          </div>
-        </div>
-
-        {/* ── Section: Dislikes ─────────────────────────────────────── */}
-        <div className="p-5 rounded-2xl bg-rose-500/[0.04] border border-rose-500/20">
-          <label className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-rose-400 mb-3">
-            <span className="flex items-center gap-2">
-              <span>👎 Dislikes &amp; Dealbreakers</span>
-              <span className="text-[10px] text-rose-300/70 font-normal lowercase">(optional)</span>
-            </span>
-            <span className="text-rose-400 text-xs font-mono">{member.disliked_items.length} items</span>
-          </label>
-
-          {/* Input & Add */}
-          <div className="flex gap-2.5 mb-3.5">
-            <input
-              type="text"
-              placeholder={`Things ${member.nickname} wants to avoid (e.g. "${currentSuggestions.dislikes[0]}")`}
-              value={dislikeInput}
-              onChange={(e) => setDislikeInput(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, true)}
-              className="wizard-input flex-1"
-            />
-            <button
-              onClick={() => addPreference(dislikeInput, true)}
-              disabled={!dislikeInput.trim()}
-              className="btn-danger px-5 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap disabled:opacity-40"
-            >
-              + Add Dislike
-            </button>
-          </div>
-
-          {/* Disliked Chips */}
-          <div className="flex flex-wrap gap-2 mb-4 min-h-[32px] items-center">
-            {member.disliked_items.map((pref, i) => (
-              <span
-                key={i}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-200 text-xs font-medium shadow-sm"
-              >
-                <span>{pref.text}</span>
-                <button
-                  onClick={() => removePreference(i, true)}
-                  className="text-rose-400/60 hover:text-white hover:scale-125 transition-all text-xs font-bold ml-1 cursor-pointer"
-                  title="Remove"
-                >
-                  ✕
-                </button>
-              </span>
-            ))}
-            {member.disliked_items.length === 0 && (
-              <span className="text-xs text-slate-500 italic">
-                No dislikes added yet. Optional, but helps avoid bad picks!
-              </span>
-            )}
-          </div>
-
-          {/* Quick Suggestions */}
-          <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-rose-500/10">
-            <span className="text-[11px] font-semibold text-slate-400">Quick Suggestions:</span>
-            {currentSuggestions.dislikes
-              .filter((s) => !member.disliked_items.some((d) => d.text.toLowerCase() === s.toLowerCase()))
-              .slice(0, 4)
-              .map((s) => (
-                <button
-                  key={s}
-                  onClick={() => addPreference(s, true)}
-                  className="text-xs px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/10 text-slate-300 hover:text-rose-300 hover:border-rose-500/40 hover:bg-rose-500/10 transition-all cursor-pointer"
-                >
-                  + {s}
-                </button>
-              ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Cohort Preferences Matrix ─────────────────────────────── */}
-      <div className="w-full glass-card p-5 mb-8 border border-white/[0.08]">
-        <div className="text-xs uppercase tracking-wider font-bold text-slate-400 mb-3 flex items-center justify-between">
-          <span>📋 Cohort Readiness Matrix</span>
-          <span className="text-indigo-400 font-mono">
-            {state.members.filter((m) => m.liked_items.length > 0).length} of {state.members.length} ready
-          </span>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          {state.members.map((m) => {
-            const mMeta = GENERATION_META[m.generation] || { emoji: "👤" };
-            const isReady = m.liked_items.length > 0;
-            return (
-              <div
-                key={m.id}
-                className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
-                  isReady
-                    ? "bg-emerald-500/[0.06] border-emerald-500/25"
-                    : "bg-white/[0.03] border-white/10"
-                }`}
-              >
-                <div className="text-xl">{mMeta.emoji}</div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-bold text-xs text-white truncate">{m.nickname}</div>
-                  <div className="text-[10px] text-slate-400">{mMeta.label}</div>
+        {/* ── Right Column: Active Member Taste Profile (8 Cols) ─────── */}
+        <div className="lg:col-span-8 flex flex-col gap-6">
+          {/* Member Banner Card */}
+          <div className="glass-card p-6 sm:p-7 border border-violet-500/30 shadow-2xl rounded-2xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-6 border-b border-white/[0.08]">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-violet-500/25 to-fuchsia-500/25 border border-white/20 flex items-center justify-center text-4xl shadow-inner">
+                  {meta.emoji}
                 </div>
-                <div className="text-right">
-                  <div className="text-xs font-bold text-emerald-400">{m.liked_items.length} 👍</div>
-                  <div className="text-[10px] text-rose-400">{m.disliked_items.length} 👎</div>
+                <div>
+                  <div className="flex items-center gap-2.5 mb-1">
+                    <h3 className="font-extrabold text-2xl text-white">{member.nickname}</h3>
+                    <span className="text-xs font-bold px-3 py-1 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30">
+                      {meta.label}
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-300">
+                    Currently has <strong className="text-emerald-400">{member.liked_items.length} likes</strong> and{" "}
+                    <strong className="text-rose-400">{member.disliked_items.length} dealbreakers</strong>
+                  </p>
                 </div>
               </div>
-            );
-          })}
+
+              {/* Quick switch next member button */}
+              {state.members.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setActiveMember((prev) => (prev + 1) % state.members.length)}
+                  className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 transition-all cursor-pointer self-start sm:self-auto"
+                >
+                  Next Family Member →
+                </button>
+              )}
+            </div>
+
+            {/* ── Section: Likes & Favorites ─────────────────────────── */}
+            <div className="mb-8 p-5 sm:p-6 rounded-2xl bg-emerald-500/[0.04] border border-emerald-500/25 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <label className="text-xs sm:text-sm font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                  <span>👍 Likes &amp; Favorites</span>
+                  <span className="text-xs text-emerald-300/80 font-normal normal-case">(required at least 1)</span>
+                </label>
+                <span className="text-emerald-400 text-xs sm:text-sm font-mono font-bold">
+                  {member.liked_items.length} saved
+                </span>
+              </div>
+
+              {/* Input + Button */}
+              <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                <input
+                  type="text"
+                  placeholder={`Add something ${member.nickname} loves (e.g. "${currentSuggestions.likes[0]}")`}
+                  value={likeInput}
+                  onChange={(e) => setLikeInput(e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(e, false)}
+                  className="wizard-input flex-1 text-base py-3.5"
+                />
+                <button
+                  onClick={() => addPreference(likeInput, false)}
+                  disabled={!likeInput.trim()}
+                  className="btn-success px-6 py-3.5 rounded-xl text-sm font-bold whitespace-nowrap disabled:opacity-40 cursor-pointer shadow-md"
+                >
+                  + Add Like
+                </button>
+              </div>
+
+              {/* Liked Chips */}
+              <div className="flex flex-wrap gap-2.5 mb-5 min-h-[36px] items-center">
+                {member.liked_items.map((pref, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-100 text-sm font-medium shadow-sm"
+                  >
+                    <span>{pref.text}</span>
+                    <button
+                      onClick={() => removePreference(i, false)}
+                      className="text-emerald-400 hover:text-white hover:scale-125 transition-all text-sm font-bold ml-1 cursor-pointer"
+                      title="Remove"
+                    >
+                      ✕
+                    </button>
+                  </span>
+                ))}
+                {member.liked_items.length === 0 && (
+                  <span className="text-sm text-slate-400 italic">
+                    No likes added yet. Choose from quick suggestions below or enter custom favorites!
+                  </span>
+                )}
+              </div>
+
+              {/* Quick Suggestions */}
+              <div className="pt-4 border-t border-emerald-500/15">
+                <span className="text-xs sm:text-sm font-semibold text-slate-300 block mb-2.5">
+                  Click to add quick suggestion:
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {currentSuggestions.likes
+                    .filter((s) => !member.liked_items.some((l) => l.text.toLowerCase() === s.toLowerCase()))
+                    .slice(0, 7)
+                    .map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => addPreference(s, false)}
+                        className="text-xs sm:text-sm px-3.5 py-1.5 rounded-full bg-white/[0.05] border border-white/10 text-slate-200 hover:text-emerald-300 hover:border-emerald-500/50 hover:bg-emerald-500/15 transition-all cursor-pointer font-medium"
+                      >
+                        + {s}
+                      </button>
+                    ))}
+                </div>
+              </div>
+            </div>
+
+            {/* ── Section: Dislikes & Dealbreakers ───────────────────── */}
+            <div className="p-5 sm:p-6 rounded-2xl bg-rose-500/[0.04] border border-rose-500/25 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <label className="text-xs sm:text-sm font-bold uppercase tracking-wider text-rose-400 flex items-center gap-2">
+                  <span>👎 Dislikes &amp; Dealbreakers</span>
+                  <span className="text-xs text-rose-300/80 font-normal normal-case">(optional, hard vetoes)</span>
+                </label>
+                <span className="text-rose-400 text-xs sm:text-sm font-mono font-bold">
+                  {member.disliked_items.length} saved
+                </span>
+              </div>
+
+              {/* Input + Button */}
+              <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                <input
+                  type="text"
+                  placeholder={`Things ${member.nickname} wants to avoid (e.g. "${currentSuggestions.dislikes[0]}")`}
+                  value={dislikeInput}
+                  onChange={(e) => setDislikeInput(e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(e, true)}
+                  className="wizard-input flex-1 text-base py-3.5"
+                />
+                <button
+                  onClick={() => addPreference(dislikeInput, true)}
+                  disabled={!dislikeInput.trim()}
+                  className="btn-danger px-6 py-3.5 rounded-xl text-sm font-bold whitespace-nowrap disabled:opacity-40 cursor-pointer shadow-md"
+                >
+                  + Add Dislike
+                </button>
+              </div>
+
+              {/* Disliked Chips */}
+              <div className="flex flex-wrap gap-2.5 mb-5 min-h-[36px] items-center">
+                {member.disliked_items.map((pref, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-100 text-sm font-medium shadow-sm"
+                  >
+                    <span>{pref.text}</span>
+                    <button
+                      onClick={() => removePreference(i, true)}
+                      className="text-rose-400 hover:text-white hover:scale-125 transition-all text-sm font-bold ml-1 cursor-pointer"
+                      title="Remove"
+                    >
+                      ✕
+                    </button>
+                  </span>
+                ))}
+                {member.disliked_items.length === 0 && (
+                  <span className="text-sm text-slate-400 italic">
+                    No dealbreakers added. Optional, but prevents unwanted genres or cuisines.
+                  </span>
+                )}
+              </div>
+
+              {/* Quick Suggestions */}
+              <div className="pt-4 border-t border-rose-500/15">
+                <span className="text-xs sm:text-sm font-semibold text-slate-300 block mb-2.5">
+                  Click to add quick dealbreaker:
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {currentSuggestions.dislikes
+                    .filter((s) => !member.disliked_items.some((d) => d.text.toLowerCase() === s.toLowerCase()))
+                    .slice(0, 5)
+                    .map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => addPreference(s, true)}
+                        className="text-xs sm:text-sm px-3.5 py-1.5 rounded-full bg-white/[0.05] border border-white/10 text-slate-200 hover:text-rose-300 hover:border-rose-500/50 hover:bg-rose-500/15 transition-all cursor-pointer font-medium"
+                      >
+                        + {s}
+                      </button>
+                    ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* ── Footer Navigation ─────────────────────────────────────── */}
-      <div className="w-full flex items-center justify-between pt-5 border-t border-white/[0.08]">
-        <button onClick={prevStep} className="btn-secondary text-sm px-5 py-2.5">
+      <div className="w-full flex items-center justify-between pt-6 border-t border-white/[0.1] mt-auto">
+        <button
+          onClick={prevStep}
+          className="btn-secondary text-sm sm:text-base px-6 py-3 rounded-xl cursor-pointer"
+        >
           ← Family Cohort
         </button>
 
         <button
           onClick={nextStep}
           disabled={!allMembersHavePrefs}
-          className="btn-primary text-sm px-7 py-3 rounded-xl shadow-lg flex items-center gap-2 disabled:opacity-40"
+          className="btn-primary text-sm sm:text-base px-8 py-3.5 rounded-xl shadow-xl flex items-center gap-3 cursor-pointer disabled:opacity-40 font-bold"
         >
-          <span>Configure Constraints</span>
-          <span>→</span>
+          <span>Continue to Constraints</span>
+          <span className="text-lg">→</span>
         </button>
       </div>
     </div>
